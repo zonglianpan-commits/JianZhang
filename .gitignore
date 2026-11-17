@@ -1,0 +1,8 @@
+# Do not commit any exported financial data or backups
+*备份*.json
+*流水*.csv
+financial-data/
+private-data/
+*.local.json
+.DS_Store
+Thumbs.db
