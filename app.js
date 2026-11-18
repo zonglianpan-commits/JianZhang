@@ -237,6 +237,7 @@ function quickEntryDialog(category){
   return;
  }
  const income=category==='income';
+ ui.txType=income?'income':'expense'; // Keep the full-form fallback on the matching entry type.
  let accountId=data.accounts[0].id;
  const ids=new Set(data.accounts.map(a=>a.id));
  for(let i=data.transactions.length-1;i>=0;i--){
