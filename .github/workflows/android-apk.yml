@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p android/app/src/main/assets/www/icons
           mkdir -p android/app/src/main/res/drawable-nodpi
-          cp index.html styles.css app.js android/app/src/main/assets/www/
+          cp index.html styles.css app.js manifest.webmanifest sw.js android/app/src/main/assets/www/
           cp icons/icon-192.png icons/icon-512.png icons/icon.svg android/app/src/main/assets/www/icons/
           cp icons/icon-192.png android/app/src/main/res/drawable-nodpi/app_icon.png
           node --check app.js

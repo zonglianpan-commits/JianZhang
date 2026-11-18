@@ -43,6 +43,15 @@ python -m http.server 8000
 - Android 使用 Chrome 的「安装应用 / 添加到主屏幕」；Safari iPhone 使用分享菜单的「添加到主屏幕」。
 - 安装页不会收集账本记录；个人财务数据仍只保存在设备浏览器本地，清除数据或卸载可能丢失记录。
 
+## Android APK（测试预览版）
+
+- **[直接下载 Android APK](https://github.com/zonglianpan-commits/JianZhang/releases/download/v1.0.0-android-preview/JianZhang-v1.0.0-preview.apk)**
+- **[见账 App 安装网页](https://zonglianpan-commits.github.io/JianZhang/download.html)**：安卓支持 APK，iPhone 仍提供 Safari「添加到主屏幕」方式。
+- APK 通过 Android 原生 WebView + WebViewAssetLoader 加载打包在应用内部的静态页面，不依赖手机联网。**没有网络权限**。
+- APK 与网页 PWA 各自存储财务数据，**不自动同步**。导入迁移需在网页版导出 JSON，再通过 APK「我的」→「导入 JSON」。
+- APK 目前使用 **debug 测试签名**，仅作功能测试。后续安装新的不同签名版本前必须导出数据备份；请勿在未备份状态下卸载 APK。
+- 正式版需要配置稳定签名密钥，妥善保管，不可上传公开仓库。详见 `android/README.md`。
+
 ## GitHub 部署和 Android 安装
 
 1. 在自己的 GitHub 账号创建专用仓库（建议名称 `JianZhang`）。
