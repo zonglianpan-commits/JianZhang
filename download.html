@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a131b">
+<meta name="description" content="见账 App 免费安装页面。资产、负债、收支、还款，记好自己的每一笔。">
+<meta property="og:title" content="见账 App · 每一笔都有数">
+<meta property="og:description" content="一款离线优先的个人财务记账软件。">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>见账 App · 下载与安装</title>
+<style>
+:root{color-scheme:dark;--bg:#0a131b;--panel:#11232b;--stroke:#324b4b;--text:#f5f9f3;--muted:#9fb6b3;--lime:#c4f29a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 75% 60% at 80% 0,#254b43 0,transparent 60%),radial-gradient(ellipse 55% 45% at -10% 55%,#14323a 0,transparent 70%),var(--bg);min-height:100vh;color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+button,a{-webkit-tap-highlight-color:transparent}button{font:inherit;cursor:pointer}a{text-decoration:none;color:inherit}a:focus-visible,button:focus-visible{outline:3px solid var(--lime);outline-offset:3px}.wrap{width:min(1080px,calc(100% - 40px));margin:auto}
+nav{display:flex;align-items:center;justify-content:space-between;padding:25px 0}.brand{display:flex;align-items:center;gap:11px;font-weight:850;font-size:20px}.brand img{height:44px;width:44px;border-radius:14px}.brand small{display:block;font-size:10px;letter-spacing:2px;color:#9ab6ac;margin-top:3px}.nav-open{border:1px solid #466057;border-radius:99px;padding:10px 17px;font-size:13px;color:#c4d9ce}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:7%;align-items:center;min-height:520px;padding:35px 0 75px}.eyebrow{font-size:12px;font-weight:850;color:var(--lime);letter-spacing:2.5px}.eyebrow::before{content:"";display:inline-block;height:7px;width:7px;border-radius:99px;background:var(--lime);margin-right:10px;box-shadow:0 0 0 4px #c4f29a1a}h1{font-size:clamp(47px,5.5vw,74px);line-height:1.2;letter-spacing:-2.4px;margin:20px 0}.accent{color:var(--lime)}.desc{line-height:2;color:#b4c7c3;font-size:16px;max-width:490px}.tags{display:flex;flex-wrap:wrap;gap:9px;margin:25px 0}.tag{border:1px solid #3d5750;background:#1b3333;color:#d3e6d9;font-size:12px;border-radius:99px;padding:8px 13px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 0}.btn{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 23px;border-radius:15px;font-weight:800;border:1px solid #4b625c;transition:transform .2s,background .2s}.btn:hover{transform:translateY(-2px)}.btn.primary{border-color:transparent;background:var(--lime);color:#1b2b21;box-shadow:0 18px 40px #bafa8140}.btn.outline{background:#193239;color:#eef7ec}.helper{font-size:12px;line-height:1.9;color:#91aca3}
+.phone{max-width:325px;width:100%;margin:auto;border:8px solid #31494b;border-radius:38px;background:linear-gradient(160deg,#122831,#0c1720);padding:24px 20px 27px;box-shadow:0 35px 90px #0009,0 0 65px #7ba68c21;transform:rotate(4deg);animation:bob 7s ease-in-out infinite}.phonehead{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px}.sample{font-size:10px;color:#98b4b1;border:1px solid #355750;border-radius:6px;padding:5px}.phlabel{font-size:12px;color:#a6c0b8;margin:31px 0 7px}.phmoney{font-size:37px;letter-spacing:-1px;font-weight:850}.phmoney small{font-size:16px;color:#a9cebf}.phcard{margin:22px 0;background:linear-gradient(135deg,#d8f6ae,#a2d8b7);padding:22px;color:#193226;border-radius:18px}.phcard small{opacity:.66}.phcard strong{font-size:23px;display:block;margin:9px 0 18px}.bars{display:flex;align-items:end;height:68px;gap:10px}.bars i{flex:1;background:#39715a;border-radius:6px 6px 2px 2px;display:block}.bars i:nth-child(1){height:55%}.bars i:nth-child(2){height:75%}.bars i:nth-child(3){height:40%}.bars i:nth-child(4){height:90%}.bars i:nth-child(5){height:64%}.bars i:nth-child(6){height:78%}.phrow{display:flex;align-items:center;gap:12px;margin:13px 0}.phicon{display:grid;place-items:center;background:#25463c;border-radius:12px;width:35px;height:35px;color:#c9f4a3}.phline{height:7px;width:45%;background:#38534c;border-radius:10px}.phrow span:last-child{margin-left:auto;font-size:11px;color:#b4c8bd}
+section{padding:34px 0}h2{font-size:29px;letter-spacing:-.5px;margin:0 0 10px}.sub{color:var(--muted);line-height:1.8;font-size:14px;margin:0 0 24px}.features{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.feature{background:linear-gradient(145deg,#19343a,#11212b);border:1px solid #314747;border-radius:19px;padding:23px 18px;min-height:158px}.feature-icon{display:grid;place-items:center;color:var(--lime);background:#28483e;border-radius:12px;width:40px;height:40px;font-size:22px}.feature b{display:block;margin-top:15px}.feature p{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.8}
+.installer{margin:45px auto 70px;background:linear-gradient(140deg,#17343b,#101f29);border:1px solid #39554f;padding:30px;border-radius:26px}.tabs{display:flex;gap:5px;border-radius:13px;background:#0e1d25;width:max-content;max-width:100%;padding:5px;margin:22px 0}.tab{border:0;background:transparent;color:#a5bfba;padding:12px 19px;border-radius:9px;font-size:13px}.tab[aria-selected=true]{background:#2b5044;color:#d6ffc1;font-weight:800}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.step{border:1px solid #34504c;padding:18px;border-radius:15px;min-height:140px}.num{background:var(--lime);border-radius:9px;color:#223628;display:grid;place-items:center;width:28px;height:28px;font-size:13px;font-weight:850}.step h3{font-size:15px;margin:13px 0 6px}.step p{font-size:12px;color:var(--muted);line-height:1.8;margin:0}.note{font-size:12px;color:#a9c2b5;line-height:1.9}.privacy{border:1px solid #35584c;background:#142c29;padding:17px 20px;border-radius:15px;color:#b0c9bd;font-size:13px;line-height:1.9;margin-top:26px}footer{border-top:1px solid #2c4141;padding:24px 0 38px;display:flex;justify-content:space-between;gap:14px;color:#8ba9a0;font-size:12px}footer a{color:#b9dfc2}
+dialog{width:min(410px,92vw);background:#142730;border:1px solid #536c5a;border-radius:23px;color:#f4faf3;padding:27px;box-shadow:0 25px 90px #000c}dialog::backdrop{background:#03090bcf;backdrop-filter:blur(5px)}dialog h2{font-size:22px}dialog p,dialog ol{font-size:14px;color:#bad1c4;line-height:1.9}dialog ol{padding-left:22px}dialog .btn{width:100%}
+@keyframes bob{50%{transform:rotate(3deg) translateY(-13px)}}
+@media(max-width:800px){.hero{grid-template-columns:1fr;text-align:center;gap:45px;padding:40px 0}.tags,.actions{justify-content:center}.desc{margin:auto}.phone{max-width:280px;transform:none;animation:none}.features{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr}.step{min-height:0}}
+@media(max-width:430px){.wrap{width:calc(100% - 32px)}nav{padding:18px 0}.brand{font-size:17px}.brand img{height:40px;width:40px}.nav-open{font-size:12px;padding:9px 12px}h1{font-size:46px}.desc{font-size:14px}.hero{padding:33px 0}.actions{display:grid}.actions .btn{width:100%}.features{gap:9px}.feature{padding:17px 12px}.installer{padding:20px;margin:32px auto 45px}.tabs{width:100%}.tab{flex:1;padding:12px 7px}footer{flex-direction:column;text-align:center}h2{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<nav class="wrap"><a class="brand" href="./download.html"><img src="./icons/icon-192.png" alt=""><span>见账<small>JIANZHANG</small></span></a><a class="nav-open" href="./index.html">打开记账软件 ↗</a></nav>
+<main>
+  <section class="wrap hero">
+    <div><div class="eyebrow">PERSONAL FINANCE · V1.0</div><h1>每一笔，<br><span class="accent">都心中有数。</span></h1><p class="desc">见账，把资产、负债、收入、开支和还款放进同一本账里。简单记，清楚看，安心用。</p>
+      <div class="tags"><span class="tag">✦ 免费使用</span><span class="tag">⌂ 本机保存</span><span class="tag">✓ 无需注册</span></div>
+      <div class="actions"><a class="btn primary" href="#install">↓ 获取见账 App</a><a class="btn outline" href="./index.html">立即使用网页版 ↗</a></div>
+      <p class="helper">支持安卓 / iPhone / 电脑 · 当前是 PWA 网页应用，暂不提供 APK / IPA 文件</p>
+    </div>
+    <div class="phone" role="img" aria-label="见账界面示意图，数据为零，不代表真实账户">
+      <div class="phonehead">见账 <span class="sample">界面示意</span></div><div class="phlabel">我的净资产</div><div class="phmoney"><small>¥</small> 0.00</div>
+      <div class="phcard"><small>月度财务趋势</small><strong>每一笔都清晰</strong><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="phrow"><span class="phicon">＋</span><span class="phline"></span><span>资产</span></div>
+      <div class="phrow"><span class="phicon">↗</span><span class="phline"></span><span>负债</span></div>
+      <div class="phrow"><span class="phicon">▦</span><span class="phline"></span><span>账单</span></div>
+    </div>
+  </section>
+  <section class="wrap"><h2>钱花去哪儿，一眼清楚</h2><p class="sub">记账不仅是流水，更是资产、负债和净资产管理。</p><div class="features">
+    <article class="feature"><div class="feature-icon">◈</div><b>资产管理</b><p>现金、银行卡、微信和支付宝账户集中查看。</p></article>
+    <article class="feature"><div class="feature-icon">↗</div><b>负债与还款</b><p>查看未还本金，还款联动资产和债务。</p></article>
+    <article class="feature"><div class="feature-icon">▦</div><b>日常记账</b><p>餐饮、出行、社交人情、购物、工作成本等。</p></article>
+    <article class="feature"><div class="feature-icon">◷</div><b>统计与备份</b><p>月度分类统计，导出账本 JSON 和 CSV 流水。</p></article>
+  </div></section>
+  <section class="wrap installer" id="install"><div class="eyebrow">INSTALL JIANZHANG</div><h2 style="margin-top:13px">下载安装到手机桌面</h2><p class="sub">选择设备，按照步骤安装；也可以直接使用网页版。</p>
+    <div class="tabs" role="tablist" aria-label="设备类型">
+      <button class="tab" type="button" data-type="android" id="androidTab" role="tab" aria-controls="steps" aria-selected="true">安卓 Android</button>
+      <button class="tab" type="button" data-type="ios" id="iosTab" role="tab" aria-controls="steps" aria-selected="false">苹果 iPhone</button>
+      <button class="tab" type="button" data-type="pc" id="pcTab" role="tab" aria-controls="steps" aria-selected="false">电脑</button>
+    </div>
+    <div class="steps" role="tabpanel" id="steps" aria-live="polite"></div><p class="note" id="platformNote"></p>
+    <div class="actions"><button class="btn primary" type="button" id="installBtn">↓ 安装见账</button><a class="btn outline" href="./index.html">直接打开软件 ↗</a><button class="btn outline" type="button" id="shareBtn">分享安装网页</button></div>
+    <div class="privacy">🔒 <b>数据安全提示：</b>记账数据仅保存在当前浏览器/设备，本版本不支持跨设备同步。卸载应用或清除浏览器数据有丢失记录的风险；建议定期到「我的」导出 JSON 备份，备份文件尚未加密。</div>
+  </section>
+</main>
+<footer class="wrap"><span>© 见账 JianZhang · V1.0</span><span><a href="./index.html">网页版</a>　·　<a target="_blank" rel="noopener noreferrer" href="https://github.com/zonglianpan-commits/JianZhang">GitHub 源码</a></span></footer>
+<dialog id="guide"><h2>安装见账</h2><p>按照下面的步骤将见账添加到设备桌面。当前不是 APK / IPA 安装包。</p><ol id="guideList"></ol><button class="btn primary" id="closeGuide" type="button">知道了</button></dialog>
+<script>
+(function(){
+'use strict';
+var deferred=null;
+var type=/iPhone|iPad|iPod/i.test(navigator.userAgent)?'ios':/Android/i.test(navigator.userAgent)?'android':'pc';
+var data={
+ android:[['用 Chrome 打开','在安卓手机 Chrome 浏览器中打开见账网页版。'],['打开安装菜单','点击浏览器菜单中的「安装应用」或「添加到主屏幕」。'],['从桌面启动','确认添加后，点击桌面的见账图标开始记账。']],
+ ios:[['使用 Safari','在 iPhone 上用 Safari 浏览器打开见账网页版。'],['点击分享按钮','点击 Safari 分享图标（方框向上箭头）。'],['添加到主屏幕','找到「添加到主屏幕」并确认添加。']],
+ pc:[['打开网页版','在 Chrome 或 Edge 浏览器中打开见账。'],['查找安装选项','浏览器地址栏或菜单如果显示「安装应用」，点击它。'],['开始使用','也可直接将网页添加书签，不安装就能记账。']]
+};
+var notes={android:'安卓浏览器如果支持原生安装提示，点击下方按钮可直接唤出；如果没有弹窗，请使用 Chrome 的菜单。',ios:'苹果端通过 Safari 添加到主屏幕使用，当前没有独立 IPA 文件。',pc:'电脑端可通过浏览器安装网页应用，具体入口取决于浏览器版本。'};
+var panel=document.getElementById('steps');
+function isInstalled(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
+function select(t){
+ type=t;panel.replaceChildren();
+ document.querySelectorAll('[data-type]').forEach(function(b){var yes=b.dataset.type===t;b.setAttribute('aria-selected',yes?'true':'false');b.tabIndex=yes?0:-1;});
+ panel.setAttribute('aria-labelledby',t+'Tab');
+ data[t].forEach(function(item,i){var el=document.createElement('article');el.className='step';var n=document.createElement('div');n.className='num';n.textContent=i+1;var h=document.createElement('h3');h.textContent=item[0];var p=document.createElement('p');p.textContent=item[1];el.append(n,h,p);panel.appendChild(el);});
+ document.getElementById('platformNote').textContent=notes[t];
+ document.getElementById('installBtn').textContent=isInstalled()?'打开见账':t==='ios'?'查看 iPhone 安装步骤':t==='pc'?'查看电脑安装步骤':'↓ 安装见账';
+}
+function guide(){var d=document.getElementById('guide');var ol=document.getElementById('guideList');ol.replaceChildren();data[type].forEach(function(item){var li=document.createElement('li');li.textContent=item[0]+'：'+item[1];ol.appendChild(li);});if(d.showModal)d.showModal();else alert(data[type].map(function(v){return v.join('：')}).join('\n'));}
+document.querySelectorAll('[data-type]').forEach(function(b){b.addEventListener('click',function(){select(b.dataset.type);});});
+document.getElementById('closeGuide').addEventListener('click',function(){document.getElementById('guide').close();});
+document.getElementById('installBtn').addEventListener('click',async function(){
+ if(isInstalled()){location.href='./index.html';return;}
+ if(type==='android'&&deferred){var event=deferred;deferred=null;try{await event.prompt();await event.userChoice;}catch(e){guide();}return;}
+ guide();
+});
+document.getElementById('shareBtn').addEventListener('click',async function(){
+ var url=new URL('./download.html',location.href).href;
+ try{if(navigator.share&&/Android|iPhone|iPad/i.test(navigator.userAgent)){await navigator.share({title:'见账 App',url:url});return;}
+ if(navigator.clipboard){await navigator.clipboard.writeText(url);this.textContent='✓ 已复制链接';return;}
+ window.prompt('复制安装链接',url);
+ }catch(e){if(e.name!=='AbortError')window.prompt('复制安装链接',url);}
+});
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;});
+window.addEventListener('appinstalled',function(){deferred=null;select(type);});
+select(type);
+if('serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});
+})();
+</script>
+</body>
+</html>
