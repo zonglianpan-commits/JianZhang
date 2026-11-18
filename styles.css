@@ -4,3 +4,5 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 
 .home-grid>section,.page,.timeline-shell,.timeline-scroll{min-width:0}.home-grid{min-width:0}.timeline-shell{max-width:100%}.app-shell{max-width:100%}
+
+.download-link{display:inline-flex;justify-content:center;align-items:center;color:#cbf6b5;background:#19382e;border:1px solid #41664d;border-radius:100px;padding:8px 12px;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}.download-link:hover{background:#2a503d}@media(max-width:460px){.top-actions{gap:6px}.download-link{padding:7px 9px;font-size:11px}.local-pill{padding:7px 8px}}

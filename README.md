@@ -35,6 +35,14 @@ python -m http.server 8000
 
 浏览器访问 `http://localhost:8000`。此时就能记账。直接双击 `index.html` 也可能工作，但 `file://` 模式下不同浏览器的本地存储规则不一致，不建议正式使用。
 
+## App 下载和安装网页
+
+- 官网安装页：https://zonglianpan-commits.github.io/JianZhang/download.html
+- 记账网页版：https://zonglianpan-commits.github.io/JianZhang/
+- 当前提供的是 PWA 网页应用，尚无 Android APK / iOS IPA 文件。
+- Android 使用 Chrome 的「安装应用 / 添加到主屏幕」；Safari iPhone 使用分享菜单的「添加到主屏幕」。
+- 安装页不会收集账本记录；个人财务数据仍只保存在设备浏览器本地，清除数据或卸载可能丢失记录。
+
 ## GitHub 部署和 Android 安装
 
 1. 在自己的 GitHub 账号创建专用仓库（建议名称 `JianZhang`）。

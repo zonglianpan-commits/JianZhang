@@ -16,6 +16,7 @@ jobs:
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
           test -f index.html
+          test -f download.html
           test -f styles.css
           test -f icons/icon-192.png
           test -f icons/icon-512.png
