@@ -1,0 +1,69 @@
+name: Build Android APK (preview)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'app.js'
+      - 'index.html'
+      - 'styles.css'
+      - 'icons/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare offline web assets and launcher icon
+        run: |
+          mkdir -p android/app/src/main/assets/www/icons
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          cp index.html styles.css app.js android/app/src/main/assets/www/
+          cp icons/icon-192.png icons/icon-512.png icons/icon.svg android/app/src/main/assets/www/icons/
+          cp icons/icon-192.png android/app/src/main/res/drawable-nodpi/app_icon.png
+          node --check app.js
+      - name: Build installable APK
+        working-directory: android
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+      - name: Prepare named APK
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk JianZhang-v1.0.0-preview.apk
+          sha256sum JianZhang-v1.0.0-preview.apk > JianZhang-v1.0.0-preview.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JianZhang-Android-Preview
+          path: |
+            JianZhang-v1.0.0-preview.apk
+            JianZhang-v1.0.0-preview.apk.sha256
+          retention-days: 90
+      - name: Publish installable preview APK (debug-signed)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-android-preview
+          name: 见账 Android v1.0.0 预览版（测试 APK）
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: |
+            JianZhang-v1.0.0-preview.apk
+            JianZhang-v1.0.0-preview.apk.sha256
+          body: |
+            首个 Android 可安装测试包，内置离线网页界面，不需要网络权限。
+            ⚠ 此版本使用 GitHub Actions 临时 debug 签名，不保证未来 APK 可以直接覆盖安装。更新前务必先在「我的」导出 JSON 备份；安装新包如提示签名冲突，请先备份后卸载旧包再安装。
+            当前没有云同步，APK 与 GitHub Pages 网页版的数据不共享。
