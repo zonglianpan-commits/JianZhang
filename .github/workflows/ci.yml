@@ -11,7 +11,7 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax
-        run: node --check app.js && node --check sw.js
+        run: node --check app.js && node --check sw.js && node --check cloud-sync.js && node --check cloud-config.js
       - name: Verify manifest and asset paths
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null

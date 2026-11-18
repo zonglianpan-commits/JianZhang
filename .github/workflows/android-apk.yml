@@ -5,6 +5,8 @@ on:
     paths:
       - 'android/**'
       - 'app.js'
+      - 'cloud-sync.js'
+      - 'cloud-config.js'
       - 'index.html'
       - 'styles.css'
       - 'icons/**'
@@ -38,10 +40,12 @@ jobs:
         run: |
           mkdir -p android/app/src/main/assets/www/icons
           mkdir -p android/app/src/main/res/drawable-nodpi
-          cp index.html styles.css app.js manifest.webmanifest sw.js android/app/src/main/assets/www/
+          cp index.html styles.css app.js cloud-sync.js cloud-config.js manifest.webmanifest sw.js android/app/src/main/assets/www/
           cp icons/icon-192.png icons/icon-512.png icons/icon.svg android/app/src/main/assets/www/icons/
           cp icons/icon-192.png android/app/src/main/res/drawable-nodpi/app_icon.png
           node --check app.js
+          node --check cloud-sync.js
+          node --check cloud-config.js
       - name: Build installable APK
         working-directory: android
         run: gradle --no-daemon --stacktrace :app:assembleDebug
@@ -70,6 +74,6 @@ jobs:
             JianZhang-v1.0.0-preview.apk
             JianZhang-v1.0.0-preview.apk.sha256
           body: |
-            首个 Android 可安装测试包，内置离线网页界面，不需要网络权限。
+            Android 测试安装包，离线记账可用；云端同步仅在自行配置 Supabase 项目并登录后启用。
             ⚠ 此版本使用 GitHub Actions 临时 debug 签名，不保证未来 APK 可以直接覆盖安装。更新前务必先在「我的」导出 JSON 备份；安装新包如提示签名冲突，请先备份后卸载旧包再安装。
-            当前没有云同步，APK 与 GitHub Pages 网页版的数据不共享。
+            当前尚未接入实际云端项目；在配置并登录同一账号前，APK 与网页版账目不自动同步。

@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Build Android APK (preview)"]
+    types: [completed]
 permissions:
   contents: read
   pages: write
@@ -12,18 +15,28 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/configure-pages@v5
       - name: Stage app only (exclude local data and docs)
         run: |
-          mkdir -p _site/icons
-          cp index.html download.html app.js styles.css sw.js manifest.webmanifest _site/
+          mkdir -p _site/icons _site/downloads
+          cp index.html download.html app.js cloud-config.js cloud-sync.js styles.css sw.js manifest.webmanifest _site/
           cp icons/icon.svg icons/icon-192.png icons/icon-512.png _site/icons/
+      - name: Mirror APK to official website (direct download)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.0.0-android-preview --repo "$GITHUB_REPOSITORY" --pattern 'JianZhang-v1.0.0-preview.apk' --dir _site/downloads
+          test -s _site/downloads/JianZhang-v1.0.0-preview.apk
+          mv _site/downloads/JianZhang-v1.0.0-preview.apk _site/downloads/JianZhang-latest.apk
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

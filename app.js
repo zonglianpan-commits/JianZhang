@@ -1,7 +1,8 @@
-/* 见账 v1 — no external services, no remote financial data transmission. */
+/* 见账 v1.1 — local-first ledger with optional private account sync. */
 (() => {
 'use strict';
-const STORE = 'jianzhang-ledger-v1';
+const GUEST_STORE = 'jianzhang-ledger-v1';
+let STORE = window.JianZhangCloud?.activeUserId() ? 'jianzhang-ledger-user-'+window.JianZhangCloud.activeUserId() : GUEST_STORE;
 const CATS = ['餐饮','出行','社交人情','购物','工作成本','生活缴费','烟酒','还款'];
 const INCOME_CATS = ['工资收入','副业收入','投资收入','其他收入'];
 const CAT_EMOJI = {'餐饮':'☕','出行':'🚕','社交人情':'🎁','购物':'🛍','工作成本':'💼','生活缴费':'💡','烟酒':'🚬','还款':'↗','工资收入':'💵','副业收入':'✨','投资收入':'◈','其他收入':'＋'};
@@ -44,7 +45,8 @@ let ui={page:'home',selectedMonth:currentMonth(),txFilter:'all',txType:'expense'
 let toastTimer=null,timelineTimer=null,wheel=null;
 const root=document.getElementById('page-root');
 const dialogRoot=document.getElementById('dialog-root');
-const save = () => {try{localStorage.setItem(STORE,JSON.stringify(data));return true;}catch{toast('本机存储失败，请立即导出备份','error');return false;}};
+const saveLocalOnly = () => {try{localStorage.setItem(STORE,JSON.stringify(data));return true;}catch{toast('本机存储失败，请立即导出备份','error');return false;}};
+const save = () => {if(!saveLocalOnly())return false;window.JianZhangCloud?.onLocalChange();return true;};
 const balanceMaps = () => {
  const accounts=Object.fromEntries(data.accounts.map(a=>[a.id,a.opening]));
  const debts=Object.fromEntries(data.debts.map(d=>[d.id,d.opening]));
@@ -109,7 +111,7 @@ function renderReports(){const s=monthStats(ui.selectedMonth);const items=monthT
  ${subtitle('SPENDING CATEGORIES','消费分类分析')}<div class="section-card">${rows.length?`<div class="chart-list">${rows.map(r=>`<div class="chart-item"><div class="chart-item-head"><span>${CAT_EMOJI[r.cat]} &nbsp;${r.cat}</span><b>${money(r.value)} <span class="muted" style="font-weight:400">${Math.round(r.value/s.expense*100)}%</span></b></div><div class="chart-track"><div class="chart-bar" style="width:${r.value/s.expense*100}%;--bar-color:${r.color}"></div></div></div>`).join('')}</div>`:'<div class="empty-compact">当月没有消费支出。新增一笔支出后，这里会自动出现分类图表。</div>'}</div>
  ${subtitle('DEBT INTELLIGENCE','还款专项')}<div class="section-card"><div class="data-row"><span>本月已还本金</span><strong>${money(s.repayment)}</strong></div><div class="data-row"><span>本月利息支出</span><strong>${money(s.interest)}</strong></div><div class="data-row"><span>当前剩余负债</span><strong>${money(totals().liabilities)}</strong></div></div><div class="report-note">💡 还款本金只是“用资产减少负债”，不会被重复计入消费；还款利息才计入当月支出。收入减支出不等于现金账户的全部变动，还款本金和转账也会影响现金流。</div>`;
 }
-function renderSettings(){const t=totals();return `${subtitle('YOUR PRIVATE LEDGER','我的账本')}<div class="settings-box"><div class="settings-title">🔐 你的数据，只在本机</div><p class="settings-desc">记账内容存储在当前浏览器设备，不会上传到 GitHub 或任何服务器。当前版本本地数据未加密，不建议在公用设备使用。清理浏览器数据、卸载 App 或换手机可能丢失记录，请定期导出 JSON 备份。</p><div class="settings-actions"><button class="btn-small" type="button" data-export-json>↓ 导出备份 JSON</button><button class="btn-small" type="button" data-export-csv>↓ 导出账单 CSV</button><button class="btn-small" type="button" data-import>↑ 导入 JSON</button></div></div>
+function renderSettings(){const t=totals();return `${subtitle('ACCOUNT & SYNC','登录与共享')}<div id="cloud-account-panel" class="settings-box"></div>${subtitle('YOUR PRIVATE LEDGER','我的账本')}<div class="settings-box"><div class="settings-title">🔐 账本本地优先</div><p class="settings-desc">账目优先保存在当前设备。只有配置云端同步并登录后，账本才会上传到你的专属云端账号。JSON 备份尚未加密；清理浏览器或卸载 App 前请导出备份。</p><div class="settings-actions"><button class="btn-small" type="button" data-export-json>↓ 导出备份 JSON</button><button class="btn-small" type="button" data-export-csv>↓ 导出账单 CSV</button><button class="btn-small" type="button" data-import>↑ 导入 JSON</button></div></div>
  ${subtitle('ASSET MANAGEMENT','账户与负债')}<div class="settings-box"><div class="data-row"><span>资产账户</span><strong>${data.accounts.length} 个 · ${money(t.assets)}</strong></div><div class="data-row"><span>负债项目</span><strong>${data.debts.length} 笔 · ${money(t.liabilities)}</strong></div><div class="data-row"><span>历史记账</span><strong>${data.transactions.length} 笔</strong></div><div class="settings-actions" style="margin-top:15px"><button type="button" class="btn-small" data-open="asset">+ 管理资产</button><button type="button" class="btn-small" data-open="debt">+ 管理负债</button><button type="button" class="btn-small" data-nav="home">查看资产卡片</button></div></div>
  ${subtitle('DANGER ZONE','数据重置')}<div class="settings-box"><div class="settings-title">清空整个账本</div><p class="settings-desc">将永久清除本设备上的资产、负债、交易流水和完成状态，无法撤销。建议先导出备份。</p><button type="button" class="btn-small btn-danger" data-reset>清空所有数据</button></div><p class="subtext" style="text-align:center;padding:15px 0">见账 V1.0 · 离线优先 · 源码可自行部署</p>`;}
 const pageTemplate = page=>page==='ledger'?renderLedger():page==='reports'?renderReports():page==='settings'?renderSettings():renderHome();
@@ -122,7 +124,7 @@ function navigate(page,source){if(!['home','ledger','reports','settings'].includ
  requestAnimationFrame(()=>requestAnimationFrame(()=>{nr.style.clipPath=`circle(${radius}px at ${x}px ${y}px)`;}));
  setTimeout(()=>{root.innerHTML='';nr.classList.remove('reveal-page');nr.removeAttribute('style');root.appendChild(nr);root.style.minHeight='';root.style.position='';ui.animating=false;applyProgress();afterRender();window.scrollTo({top:0,behavior:'smooth'});},670);
 }
-function afterRender(){if(ui.page==='home')setupTimeline();}
+function afterRender(){if(ui.page==='home')setupTimeline();if(ui.page==='settings')window.JianZhangCloud?.render();}
 function setupTimeline(){const wrap=document.getElementById('timeline-scroll');if(!wrap)return;const active=wrap.querySelector('.selected');if(active){wrap.scrollLeft=active.offsetLeft+active.offsetWidth/2-wrap.clientWidth/2;setTimeout(()=>active.classList.add('draw'),110);}wrap.addEventListener('scroll',()=>{clearTimeout(timelineTimer);wrap.querySelectorAll('.timeline-item.draw').forEach(el=>el.classList.remove('draw'));timelineTimer=setTimeout(()=>{
  const center=wrap.scrollLeft+wrap.clientWidth/2;const tiles=[...wrap.querySelectorAll('.timeline-item')];const closest=tiles.reduce((best,el)=>Math.abs(el.offsetLeft+el.offsetWidth/2-center)<Math.abs(best.offsetLeft+best.offsetWidth/2-center)?el:best,tiles[0]);if(!closest)return;ui.selectedMonth=closest.dataset.month;tiles.forEach(el=>el.classList.toggle('selected',el===closest));closest.classList.add('draw');const picker=document.querySelector('[data-open-wheel]');if(picker)picker.innerHTML=`${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄`;
  },135);},{passive:true});}
@@ -208,5 +210,11 @@ document.addEventListener('submit',e=>{if(!['transaction-form','asset-form','deb
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialogRoot.childElementCount){if(wheel)wheel.dispose();closeDialog();}});
 document.querySelectorAll('.nav-icon').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 render();
+window.JianZhangCloud?.init({
+  getData:()=>JSON.parse(JSON.stringify(data)),
+  validate:isValid,
+  applyRemote:next=>{if(!isValid(next))throw new Error('远程账本无效');data=next;if(!saveLocalOnly())throw new Error('本机保存失败');render();},
+  switchAccount:userId=>{STORE=userId?'jianzhang-ledger-user-'+userId:GUEST_STORE;data=load();ui={...ui,page:'settings',selectedMonth:currentMonth(),stackExpanded:false,animating:false};render();}
+});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();

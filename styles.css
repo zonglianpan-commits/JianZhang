@@ -6,3 +6,6 @@
 .home-grid>section,.page,.timeline-shell,.timeline-scroll{min-width:0}.home-grid{min-width:0}.timeline-shell{max-width:100%}.app-shell{max-width:100%}
 
 .download-link{display:inline-flex;justify-content:center;align-items:center;color:#cbf6b5;background:#19382e;border:1px solid #41664d;border-radius:100px;padding:8px 12px;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}.download-link:hover{background:#2a503d}@media(max-width:460px){.top-actions{gap:6px}.download-link{padding:7px 9px;font-size:11px}.local-pill{padding:7px 8px}}
+
+/* Optional cloud-sync account UI */
+.sync-form{display:grid;gap:11px;margin-top:15px}.sync-form input{width:100%;min-height:46px;border:1px solid var(--border);border-radius:12px;padding:10px 13px;color:var(--text);background:var(--surface2);font-size:14px}.sync-state{color:#bdeca9;font-size:14px;font-weight:700}.sync-warning{color:var(--muted);font-size:12px;line-height:1.8}.sync-status{background:#1a3435;color:#d6f8dc;border:1px solid #365952;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.7}.sync-form .settings-actions{margin-top:5px}
