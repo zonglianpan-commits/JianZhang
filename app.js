@@ -41,7 +41,7 @@ function isValid(data){
 }
 function load(){try{const raw=localStorage.getItem(STORE);if(!raw)return defaultData();const parsed=JSON.parse(raw);return isValid(parsed)?parsed:defaultData();}catch{return defaultData();}}
 let data=load();
-let ui={page:'home',selectedMonth:currentMonth(),txFilter:'all',txType:'expense',stackExpanded:false,animating:false};
+let ui={page:'home',selectedMonth:currentMonth(),txFilter:'all',txType:'expense',reportCategory:null,stackExpanded:false,animating:false};
 let toastTimer=null,timelineTimer=null,wheel=null;
 const root=document.getElementById('page-root');
 const dialogRoot=document.getElementById('dialog-root');
@@ -94,22 +94,67 @@ function accountDetailsHTML(t){
 }
 function timelineItems(){return Array.from({length:15},(_,i)=>monthAdd(ui.selectedMonth,i-9)).map(key=>{const s=monthStats(key),sel=key===ui.selectedMonth;return `<button type="button" class="timeline-item ${sel?'selected':''}" data-month="${key}"><small>${key.slice(0,4)} / ${key.slice(5)}月</small><strong>${money(s.expense)}</strong><div class="timeline-label">本月总支出</div><svg class="timeline-spark" viewBox="0 0 130 30" aria-hidden="true"><path d="M2 22 C21 23,28 6,45 14 S70 27,89 12 S112 8,128 3"/></svg></button>`;}).join('');}
 function txLabel(t){return t.type==='repay'?'还款':t.type==='transfer'?'转账':t.type==='income'?'收入':t.category;}
-function txListHTML(items){
- if(!items.length)return `<div class="empty-state"><div class="empty-art">✦</div><h3>还没有记账记录</h3><p>从第一笔收入或支出开始，慢慢拼出你的财务全貌。</p><button class="action-primary" type="button" data-open="transaction">${icon('plus',16)} 记第一笔</button></div>`;
- const aNames=Object.fromEntries(data.accounts.map(a=>[a.id,a.name]));const dNames=Object.fromEntries(data.debts.map(d=>[d.id,d.name]));
- return items.map(t=>{const label=txLabel(t),sign=t.type==='income'?'+':t.type==='transfer'?'→':'−';const description=t.type==='repay'?`${dNames[t.debtId]||'负债'} · 本金${money(t.amount)}${t.interest?' · 利息'+money(t.interest):''}`:t.type==='transfer'?`${aNames[t.accountId]||''} → ${aNames[t.targetAccountId]||''}`:`${aNames[t.accountId]||''}${t.note?' · '+t.note:''}`;const sum=t.type==='repay'?t.amount+(t.interest||0):t.amount;
- return `<div class="tx-row"><div class="tx-icon ${t.type}">${t.type==='transfer'?'⇄':t.type==='repay'?'↗':t.type==='income'?'↙':CAT_EMOJI[label]||'•'}</div><div class="tx-body"><strong>${esc(label)}${t.type==='repay'&&t.note?' · '+esc(t.note):''}</strong><small>${esc(description)}</small></div><div class="tx-right"><strong style="color:${t.type==='income'?'var(--mint)':t.type==='expense'?'var(--text)':'#d3c6ed'}">${sign}${money(sum)}</strong><small>${esc(t.date.slice(5))} <button type="button" class="delete-btn" data-delete-tx="${esc(t.id)}">删除</button></small></div></div>`;}).join('');
+function txListHTML(items,options={}){
+ if(!items.length)return options.reportCategory
+  ? '<div class="empty-compact">这个分类暂时没有账单。</div>'
+  : '<div class="empty-state"><div class="empty-art">✦</div><h3>还没有记账记录</h3><p>从第一笔收入或支出开始，慢慢拼出你的财务全貌。</p><button class="action-primary" type="button" data-open="transaction">'+icon('plus',16)+' 记第一笔</button></div>';
+ const aNames=Object.fromEntries(data.accounts.map(a=>[a.id,a.name]));
+ const dNames=Object.fromEntries(data.debts.map(d=>[d.id,d.name]));
+ return items.map(t=>{
+  const interestOnly=options.reportCategory==='还款'&&t.type==='repay';
+  const label=interestOnly?'还款利息':txLabel(t);
+  const sign=t.type==='income'?'+':t.type==='transfer'?'→':'−';
+  const description=t.type==='repay'
+    ? `${dNames[t.debtId]||'负债'} · 本金${money(t.amount)}${t.interest?' · 利息'+money(t.interest):''}${t.note?' · '+t.note:''}`
+    : t.type==='transfer'
+      ? `${aNames[t.accountId]||''} → ${aNames[t.targetAccountId]||''}${t.note?' · '+t.note:''}`
+      : `${aNames[t.accountId]||''}${t.note?' · '+t.note:''}`;
+  const sum=interestOnly?t.interest:t.type==='repay'?t.amount+(t.interest||0):t.amount;
+  const entryId=esc(t.id);
+  return `<div class="tx-row tx-row-editable" data-edit-tx="${entryId}" title="点击编辑这笔账单">
+   <div class="tx-icon ${t.type}">${t.type==='transfer'?'⇄':t.type==='repay'?'↗':t.type==='income'?'↙':CAT_EMOJI[label]||'↗'}</div>
+   <div class="tx-body"><strong>${esc(label)}</strong><small>${esc(description)}</small></div>
+   <div class="tx-right"><strong style="color:${t.type==='income'?'var(--mint)':t.type==='expense'?'var(--text)':'#d3c6ed'}">${sign}${money(sum)}</strong>
+    <small>${esc(t.date.slice(5))}<span class="tx-actions"><button type="button" class="edit-btn" data-edit-tx="${entryId}" aria-label="编辑${esc(t.date)}${esc(label)}账单">编辑</button><button type="button" class="delete-btn" data-delete-tx="${entryId}" aria-label="删除${esc(t.date)}${esc(label)}账单">删除</button></span></small>
+   </div></div>`;
+ }).join('');
+}
+function reportCategoryTransactions(cat,key=ui.selectedMonth){
+ return monthTx(key).filter(t=>(t.type==='expense'&&t.category===cat)||
+  (cat==='还款'&&t.type==='repay'&&(t.interest||0)>0))
+ .sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
 }
 function renderLedger(){const s=monthStats(ui.selectedMonth);let items=monthTx(ui.selectedMonth).sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));if(ui.txFilter!=='all')items=items.filter(t=>t.type===ui.txFilter);
  const tags=[['all','全部'],['expense','支出'],['income','收入'],['repay','还款'],['transfer','转账']];
  return `${subtitle('MONEY JOURNAL','收支账单',`<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`)}<div class="metric-grid"><div class="metric"><small>总收入</small><strong class="green">${money(s.income)}</strong></div><div class="metric"><small>总支出 (含利息)</small><strong class="red">${money(s.expense)}</strong></div><div class="metric"><small>已还本金</small><strong>${money(s.repayment)}</strong></div></div>
  ${subtitle('TRANSACTIONS',`${items.length} 笔记录`,'<button type="button" class="subtle-btn" data-open="transaction">+ 新增记录</button>')}<div class="tag-row">${tags.map(([id,label])=>`<button type="button" class="filter-tag ${ui.txFilter===id?'active':''}" data-filter="${id}">${label}</button>`).join('')}</div><div class="tx-list">${txListHTML(items)}</div>`;
 }
-function renderReports(){const s=monthStats(ui.selectedMonth);const items=monthTx(ui.selectedMonth);const sums=Object.fromEntries(CATS.map(c=>[c,0]));for(const t of items){if(t.type==='expense'&&sums[t.category]!==undefined)sums[t.category]+=t.amount;if(t.type==='repay')sums['还款']+=(t.interest||0);}
- const rows=CATS.map((cat,i)=>({cat,value:sums[cat],color:BAR_COLORS[i]})).filter(v=>v.value>0).sort((a,b)=>b.value-a.value);
- return `${subtitle('MONEY INSIGHTS','财务月报',`<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`)}<div class="metric-grid"><div class="metric"><small>收入</small><strong class="green">${money(s.income)}</strong></div><div class="metric"><small>支出</small><strong class="red">${money(s.expense)}</strong></div><div class="metric"><small>收支结余</small><strong>${money(s.income-s.expense)}</strong></div></div>
- ${subtitle('SPENDING CATEGORIES','消费分类分析')}<div class="section-card">${rows.length?`<div class="chart-list">${rows.map(r=>`<div class="chart-item"><div class="chart-item-head"><span>${CAT_EMOJI[r.cat]} &nbsp;${r.cat}</span><b>${money(r.value)} <span class="muted" style="font-weight:400">${Math.round(r.value/s.expense*100)}%</span></b></div><div class="chart-track"><div class="chart-bar" style="width:${r.value/s.expense*100}%;--bar-color:${r.color}"></div></div></div>`).join('')}</div>`:'<div class="empty-compact">当月没有消费支出。新增一笔支出后，这里会自动出现分类图表。</div>'}</div>
- ${subtitle('DEBT INTELLIGENCE','还款专项')}<div class="section-card"><div class="data-row"><span>本月已还本金</span><strong>${money(s.repayment)}</strong></div><div class="data-row"><span>本月利息支出</span><strong>${money(s.interest)}</strong></div><div class="data-row"><span>当前剩余负债</span><strong>${money(totals().liabilities)}</strong></div></div><div class="report-note">💡 还款本金只是“用资产减少负债”，不会被重复计入消费；还款利息才计入当月支出。收入减支出不等于现金账户的全部变动，还款本金和转账也会影响现金流。</div>`;
+function renderReports(){
+ const s=monthStats(ui.selectedMonth),items=monthTx(ui.selectedMonth);
+ const sums=Object.fromEntries(CATS.map(c=>[c,0]));
+ for(const t of items){
+  if(t.type==='expense'&&sums[t.category]!==undefined)sums[t.category]+=t.amount;
+  if(t.type==='repay')sums['还款']+=(t.interest||0);
+ }
+ const rows=CATS.map((cat,i)=>({cat,value:sums[cat],color:BAR_COLORS[i]})).filter(r=>r.value>0).sort((a,b)=>b.value-a.value);
+ const chosen=rows.find(r=>r.cat===ui.reportCategory);
+ const details=chosen?reportCategoryTransactions(chosen.cat):[];
+ const detailTotal=details.reduce((sum,t)=>sum+(chosen.cat==='还款'&&t.type==='repay'?(t.interest||0):t.amount),0);
+ return `${subtitle('MONEY INSIGHTS','财务月报',`<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`)}
+ <div class="metric-grid"><div class="metric"><small>收入</small><strong class="green">${money(s.income)}</strong></div><div class="metric"><small>支出</small><strong class="red">${money(s.expense)}</strong></div><div class="metric"><small>收支结余</small><strong>${money(s.income-s.expense)}</strong></div></div>
+ ${subtitle('SPENDING CATEGORIES','消费分类分析','<span class="subtext">点击分类查看账单 ↓</span>')}
+ <div class="section-card">
+ ${rows.length?`<div class="chart-list">${rows.map(r=>`<button type="button" class="chart-item chart-choice ${chosen?.cat===r.cat?'selected':''}" data-report-category="${esc(r.cat)}" aria-expanded="${chosen?.cat===r.cat?'true':'false'}" aria-controls="report-category-details" aria-label="查看${esc(r.cat)}分类账单">
+  <div class="chart-item-head"><span>${CAT_EMOJI[r.cat]} &nbsp;${esc(r.cat)} <span class="chart-chevron">⌄</span></span><b>${money(r.value)} <span class="muted" style="font-weight:400">${Math.round(r.value/s.expense*100)}%</span></b></div>
+  <div class="chart-track"><div class="chart-bar" style="width:${r.value/s.expense*100}%;--bar-color:${r.color}"></div></div>
+ </button>`).join('')}</div>`:'<div class="empty-compact">当月没有消费支出。新增一笔支出后，这里会自动出现分类图表。</div>'}
+ ${chosen?`<div class="category-details" id="report-category-details"><div class="category-detail-heading"><div><strong>${CAT_EMOJI[chosen.cat]} ${esc(chosen.cat)} · ${details.length} 笔</strong><small>${monthTitle(ui.selectedMonth)} · 分类合计 ${money(detailTotal)}</small></div><button type="button" class="btn-small" data-close-report-category>收起</button></div>
+ ${chosen.cat==='还款'?'<p class="category-detail-note">这里只统计还款利息及普通「还款」分类支出；还款本金不属于消费。</p>':''}
+ <div class="tx-list">${txListHTML(details,{reportCategory:chosen.cat})}</div></div>`:''}
+ </div>
+ ${subtitle('DEBT INTELLIGENCE','还款专项')}
+ <div class="section-card"><div class="data-row"><span>本月已还本金</span><strong>${money(s.repayment)}</strong></div><div class="data-row"><span>本月利息支出</span><strong>${money(s.interest)}</strong></div><div class="data-row"><span>当前剩余负债</span><strong>${money(totals().liabilities)}</strong></div></div>
+ <div class="report-note">💡 还款本金只是“用资产减少负债”，不会被重复计入消费；还款利息才计入当月支出。收入减支出不等于现金账户的全部变动，还款本金和转账也会影响现金流。</div>`;
 }
 function renderSettings(){const t=totals();return `${subtitle('ACCOUNT & SYNC','登录与共享')}<div id="cloud-account-panel" class="settings-box"></div>${subtitle('YOUR PRIVATE LEDGER','我的账本')}<div class="settings-box"><div class="settings-title">🔐 账本本地优先</div><p class="settings-desc">账目优先保存在当前设备。只有配置云端同步并登录后，账本才会上传到你的专属云端账号。JSON 备份尚未加密；清理浏览器或卸载 App 前请导出备份。</p><div class="settings-actions"><button class="btn-small" type="button" data-export-json>↓ 导出备份 JSON</button><button class="btn-small" type="button" data-export-csv>↓ 导出账单 CSV</button><button class="btn-small" type="button" data-import>↑ 导入 JSON</button></div></div>
  ${subtitle('ASSET MANAGEMENT','账户与负债')}<div class="settings-box"><div class="data-row"><span>资产账户</span><strong>${data.accounts.length} 个 · ${money(t.assets)}</strong></div><div class="data-row"><span>负债项目</span><strong>${data.debts.length} 笔 · ${money(t.liabilities)}</strong></div><div class="data-row"><span>历史记账</span><strong>${data.transactions.length} 笔</strong></div><div class="settings-actions" style="margin-top:15px"><button type="button" class="btn-small" data-open="asset">+ 管理资产</button><button type="button" class="btn-small" data-open="debt">+ 管理负债</button><button type="button" class="btn-small" data-nav="home">查看资产卡片</button></div></div>
@@ -134,30 +179,87 @@ function field(label,name,value='',extra=''){return `<label class="field"><span 
 function selectField(label,name,items,selected=''){return `<label class="field"><span class="field-label">${label}</span><select name="${name}" required>${items.map(a=>`<option value="${esc(a.value)}" ${String(a.value)===String(selected)?'selected':''}>${esc(a.label)}</option>`).join('')}</select></label>`;}
 const moneyInput = (label,name,value='')=>field(label,name,value,`type="number" inputmode="decimal" step="0.01" min="${name==='opening'?'0':'0.01'}" max="10000000000" required`);
 const accountOptions=()=>data.accounts.map(a=>({value:a.id,label:`${a.name} · ${money(totals().accounts[a.id])}`}));
-function transactionDialog(){
- const type=ui.txType;const acc=accountOptions();const debts=data.debts.map(d=>({value:d.id,label:`${d.name} · 待还 ${money(totals().debts[d.id])}`}));
+function transactionDialog(editId){
+ const existing=editId?data.transactions.find(t=>t.id===editId):null;
+ if(editId&&!existing)return invalid('找不到这笔账单，请刷新后重试');
+ const type=existing?.type||ui.txType;
+ const acc=accountOptions();
+ const debts=data.debts.map(d=>({value:d.id,label:`${d.name} · 待还 ${money(totals().debts[d.id])}`}));
  const labels=[['expense','支出'],['income','收入'],['repay','还款'],['transfer','转账']];
  const accountsReady=acc.length>0&&((type!=='transfer')||acc.length>=2)&&((type!=='repay')||debts.length>0);
- const extra=type==='repay'?`${selectField('偿还哪笔负债','debtId',debts)}${field('其中的利息（选填）','interest','0.00','type="number" inputmode="decimal" min="0" step="0.01"')}`:type==='transfer'?selectField('转入账户','targetAccountId',acc.slice().reverse()):selectField('记账分类','category',(type==='income'?INCOME_CATS:CATS).map(c=>({value:c,label:`${CAT_EMOJI[c]} ${c}`})));
- const note=type==='repay'?'<div class="form-helper">填写的金额是还款本金。还款后资产减少“本金 + 利息”，负债减少本金，利息计入支出。</div>':type==='expense'?'<div class="form-helper">偿还已有债务的本金，请选“还款”类型；普通支出中的“还款”分类适用于不关联负债的费用。</div>':'';
- showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">记一笔 · ${labels.find(a=>a[0]===type)[1]}</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><div class="segmented">${labels.map(([id,label])=>`<button type="button" class="segment ${type===id?'active':''}" data-tx-type="${id}">${label}</button>`).join('')}</div>${accountsReady?`<form id="transaction-form">${moneyInput(type==='repay'?'还款本金（元）':'金额（元）','amount')}${selectField(type==='transfer'?'转出账户':'资金账户','accountId',acc)}${extra}<div class="form-grid">${field('发生日期','date',today(),'type="date" required')}${field('备注（可选）','note','','maxlength="200" placeholder="写点说明"')}</div>${note}<button type="submit" class="submit-btn">${icon('check',19)} 完成记账</button></form>`:`<div class="empty-state"><div class="empty-art">◈</div><h3>${!acc.length?'先添加一个资产账户':type==='repay'?'还没有负债项目':'至少需要两个资产账户'}</h3><p>记录交易需要确定资金从哪里来、到哪里去。</p><button type="button" class="action-primary" data-open="${type==='repay'?'debt':'asset'}">+ 添加${type==='repay'?'负债':'资产账户'}</button></div>`}`);
+ const extra=type==='repay'
+  ? `${selectField('偿还哪笔负债','debtId',debts,existing?.debtId||'')}${field('其中的利息（选填）','interest',existing?((existing.interest||0)/100).toFixed(2):'0.00','type="number" inputmode="decimal" min="0" step="0.01"')}`
+  : type==='transfer'
+  ? selectField('转入账户','targetAccountId',acc.slice().reverse(),existing?.targetAccountId||'')
+  : selectField('记账分类','category',(type==='income'?INCOME_CATS:CATS).map(c=>({value:c,label:`${CAT_EMOJI[c]} ${c}`})),existing?.category||'');
+ const note=type==='repay'
+  ? '<div class="form-helper">填写金额为还款本金，利息单独填写。修改后会重新计算该负债与账户余额。</div>'
+  : type==='expense'
+    ? '<div class="form-helper">偿还已有债务的本金，请选“还款”类型；普通支出中的“还款”分类适用于不关联负债的费用。</div>'
+    : '';
+ const tabs=existing
+  ? `<div class="form-helper tx-edit-type">原记账类型：${labels.find(a=>a[0]===type)[1]}（修改记录时类型保持不变）</div>`
+  : `<div class="segmented">${labels.map(([id,label])=>`<button type="button" class="segment ${type===id?'active':''}" data-tx-type="${id}">${label}</button>`).join('')}</div>`;
+ showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">${existing?'编辑账单':'记一笔'} · ${labels.find(a=>a[0]===type)[1]}</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div>${tabs}
+ ${accountsReady?`<form id="transaction-form" data-edit="${esc(existing?.id||'')}" data-entry-type="${type}">
+ ${moneyInput(type==='repay'?'还款本金（元）':'金额（元）','amount',existing?(existing.amount/100).toFixed(2):'')}
+ ${selectField(type==='transfer'?'转出账户':'资金账户','accountId',acc,existing?.accountId||'')}
+ ${extra}
+ <div class="form-grid">${field('发生日期','date',existing?.date||today(),'type="date" required')}${field('备注（可选）','note',existing?.note||'','maxlength="200" placeholder="写点说明"')}</div>${note}
+ <button type="submit" class="submit-btn">${icon('check',19)} ${existing?'保存修改':'完成记账'}</button></form>`:
+ `<div class="empty-state"><div class="empty-art">◈</div><h3>${!acc.length?'先添加一个资产账户':type==='repay'?'还没有负债项目':'至少需要两个资产账户'}</h3><p>记录交易需要确定资金从哪里来、到哪里去。</p><button type="button" class="action-primary" data-open="${type==='repay'?'debt':'asset'}">+ 添加${type==='repay'?'负债':'资产账户'}</button></div>`}`);
 }
 function assetDialog(id){const existing=data.accounts.find(a=>a.id===id);const name=existing?.name||'';const opening=existing?(existing.opening/100).toFixed(2):'';
  showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">${existing?'编辑':'新增'}资产账户</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><form id="asset-form" data-edit="${esc(id||'')}">${field('账户名称','name',name,'required maxlength="60" placeholder="如：微信钱包、建设银行卡"')}${selectField('资产类型','type',['银行卡','现金','微信','支付宝','投资','其他资产'].map(x=>({value:x,label:x})),existing?.type||'银行卡')}${moneyInput('期初金额 / 资产估值（元）','opening',opening)}<div class="form-helper">期初金额是账户建立时的基准值；后续流水会自动增减余额。非现金资产可登记估值，但不要把同一笔钱在不同账户重复登记。</div><button type="submit" class="submit-btn">${icon('check')} ${existing?'保存修改':'创建资产账户'}</button></form>${existing?`<div class="settings-actions" style="margin-top:12px"><button type="button" class="btn-small btn-danger" data-delete-asset="${esc(id)}">删除此账户</button></div>`:''}`);
 }
 function debtDialog(id){const existing=data.debts.find(d=>d.id===id);showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">${existing?'编辑':'新增'}负债</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><form id="debt-form" data-edit="${esc(id||'')}">${field('负债名称','name',existing?.name||'','required maxlength="60" placeholder="如：信用卡、银行贷款"')}${field('债权人 / 银行（选填）','creditor',existing?.creditor||'','maxlength="70" placeholder="如：某银行、某朋友"')}${moneyInput('当前未还本金（元）','opening',existing?(existing.opening/100).toFixed(2):'')}<div class="form-helper">填写创建账本时尚未归还的本金。今后的每笔“还款”都会扣减此负债。不自动把这笔借款增加到你的资产，避免历史借款重复计算。</div><button type="submit" class="submit-btn">${icon('check')} ${existing?'保存修改':'创建负债记录'}</button></form>${existing?`<div class="settings-actions" style="margin-top:12px"><button type="button" class="btn-small btn-danger" data-delete-debt="${esc(id)}">删除此负债</button></div>`:''}`);}
-function openDialog(type,id){if(type==='transaction')transactionDialog();if(type==='asset')assetDialog(id);if(type==='debt')debtDialog(id);}
+function openDialog(type,id){if(type==='transaction')transactionDialog(id);if(type==='asset')assetDialog(id);if(type==='debt')debtDialog(id);}
 function invalid(message){toast(message,'error');return false;}
 function successThenClose(form,message){const btn=form.querySelector('button[type="submit"]');btn.disabled=true;btn.innerHTML=icon('check',23);btn.classList.add('success');emitParticles(btn);setTimeout(()=>{closeDialog();render();toast(message);},650);}
-function submitTransaction(form){const f=new FormData(form),type=ui.txType,amount=amountCents(f.get('amount'));if(!positive(amount))return invalid('请输入有效的正数金额，最多两位小数');
- const accountId=String(f.get('accountId')||''),account=data.accounts.find(a=>a.id===accountId),date=String(f.get('date')||''),note=String(f.get('note')||'').trim();if(!account)return invalid('请选择有效资产账户');if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime()))return invalid('请选择有效日期');
- const entry={id:uid(),type,accountId,date,amount,note,category:'',interest:0,createdAt:new Date().toISOString()};
- if(type==='income'||type==='expense'){entry.category=String(f.get('category')||'');if(!(type==='income'?INCOME_CATS:CATS).includes(entry.category))return invalid('分类无效');}
- if(type==='transfer'){entry.targetAccountId=String(f.get('targetAccountId')||'');entry.category='转账';if(!data.accounts.some(a=>a.id===entry.targetAccountId)||entry.targetAccountId===accountId)return invalid('转出和转入账户不能相同');}
- if(type==='repay'){entry.debtId=String(f.get('debtId')||'');entry.category='还款';entry.interest=amountCents(f.get('interest')||'0');if(!Number.isSafeInteger(entry.interest)||entry.interest<0)return invalid('利息金额无效');if(!data.debts.some(d=>d.id===entry.debtId))return invalid('请选择负债项目');if(totals().debts[entry.debtId]<amount)return invalid('还款本金不能超过该笔负债的剩余本金');}
- const spend=type==='repay'?amount+entry.interest:amount;
- if(type!=='income'&&totals().accounts[accountId]<spend)return invalid('账户余额不足，请核对期初余额或选择其他账户');
- data.transactions.push(entry);if(!save()){data.transactions.pop();return false;}successThenClose(form,'已记入账本 ✓');return true;
+function submitTransaction(form){
+ const f=new FormData(form),editId=form.dataset.edit||'',previousIndex=editId?data.transactions.findIndex(t=>t.id===editId):-1;
+ if(editId&&previousIndex<0)return invalid('这笔账单已不存在，请刷新后重试');
+ const previous=previousIndex>=0?data.transactions[previousIndex]:null;
+ const type=previous?.type||form.dataset.entryType||ui.txType;
+ const amount=amountCents(f.get('amount'));
+ if(!positive(amount))return invalid('请输入有效的正数金额，最多两位小数');
+ const accountId=String(f.get('accountId')||''),account=data.accounts.find(a=>a.id===accountId);
+ const date=String(f.get('date')||''),note=String(f.get('note')||'').trim();
+ if(!account)return invalid('请选择有效资产账户');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime()))return invalid('请选择有效日期');
+ if(note.length>200)return invalid('备注不能超过 200 字');
+ const entry={id:previous?.id||uid(),type,accountId,date,amount,note,category:'',interest:0,createdAt:previous?.createdAt||new Date().toISOString()};
+ if(type==='income'||type==='expense'){
+  entry.category=String(f.get('category')||'');
+  if(!(type==='income'?INCOME_CATS:CATS).includes(entry.category))return invalid('分类无效');
+ }
+ if(type==='transfer'){
+  entry.targetAccountId=String(f.get('targetAccountId')||'');
+  entry.category='转账';
+  if(!data.accounts.some(a=>a.id===entry.targetAccountId)||entry.targetAccountId===accountId)return invalid('转出与转入账户不能相同');
+ }
+ if(type==='repay'){
+  entry.debtId=String(f.get('debtId')||'');
+  entry.category='还款';
+  entry.interest=amountCents(f.get('interest')||'0');
+  if(!Number.isSafeInteger(entry.interest)||entry.interest<0)return invalid('利息金额无效');
+  if(!data.debts.some(d=>d.id===entry.debtId))return invalid('请选择有效负债项目');
+ }
+ // Replacing the original entry reverses its old effect without double counting.
+ if(previousIndex>=0)data.transactions[previousIndex]=entry;else data.transactions.push(entry);
+ const balances=totals();
+ if(Object.values(balances.accounts).some(v=>!Number.isSafeInteger(v)||v<0)||
+    Object.values(balances.debts).some(v=>!Number.isSafeInteger(v)||v<0)){
+   if(previousIndex>=0)data.transactions[previousIndex]=previous;else data.transactions.pop();
+   return invalid('修改后有账户余额不足或还款本金超过剩余负债，未保存这次修改');
+ }
+ if(!save()){
+  if(previousIndex>=0)data.transactions[previousIndex]=previous;else data.transactions.pop();
+  return false;
+ }
+ if(previous && date.slice(0,7)!==ui.selectedMonth)ui.selectedMonth=date.slice(0,7);
+ successThenClose(form,previous?'账单已更新，余额与统计已重新计算 ✓':'已记入账本 ✓');
+ return true;
 }
 function submitAsset(form){const f=new FormData(form),name=String(f.get('name')||'').trim(),type=String(f.get('type')||'银行卡'),opening=amountCents(f.get('opening'));if(!name||name.length>60)return invalid('请输入资产账户名称');if(!Number.isSafeInteger(opening)||opening<0)return invalid('请输入有效的期初余额');const id=form.dataset.edit;const existing=data.accounts.find(a=>a.id===id);if(existing){const old={...existing};Object.assign(existing,{name,type,opening});const newBalance=totals().accounts[id];if(newBalance<0){Object.assign(existing,old);return invalid('调整后余额为负，请检查历史流水');}}else data.accounts.push({id:uid(),name,type,opening});if(!save())return false;successThenClose(form,'资产账户已保存');return true;}
 function submitDebt(form){const f=new FormData(form),name=String(f.get('name')||'').trim(),creditor=String(f.get('creditor')||'').trim(),opening=amountCents(f.get('opening'));if(!name||name.length>60||creditor.length>70)return invalid('请输入有效的负债信息');if(!Number.isSafeInteger(opening)||opening<0)return invalid('请输入有效的本金');const id=form.dataset.edit;const existing=data.debts.find(d=>d.id===id);if(existing){const old={...existing};Object.assign(existing,{name,creditor,opening});if(totals().debts[id]<0){Object.assign(existing,old);return invalid('修改后剩余负债为负，请检查还款记录');}}else data.debts.push({id:uid(),name,creditor,opening});if(!save())return false;successThenClose(form,'负债记录已保存');return true;}
@@ -186,7 +288,11 @@ function openWheel(){const months=Array.from({length:49},(_,i)=>monthAdd(current
  wheel={dispose:()=>{if(raf)cancelAnimationFrame(raf);}};draw();}
 // Event delegation maintains interactions across animated page replacements.
 document.addEventListener('click',e=>{
- const b=e.target.closest('button');if(!b){if(e.target.matches('[data-backdrop]'))closeDialog();return;}
+ const b=e.target.closest('button');
+ if(!b){if(e.target.matches('[data-backdrop]')){closeDialog();return;}
+  const txRow=e.target.closest('.tx-row[data-edit-tx]');if(txRow)openDialog('transaction',txRow.dataset.editTx);
+  return;
+ }
  if(b.dataset.close!==undefined){if(wheel)wheel.dispose();closeDialog();return;}
  if(b.dataset.nav){navigate(b.dataset.nav,b);return;}
  if(b.dataset.open){closeDialog();openDialog(b.dataset.open);return;}
@@ -198,6 +304,9 @@ document.addEventListener('click',e=>{
  if(b.dataset.openWheel!==undefined){openWheel();return;}
  if(b.dataset.editAsset){openDialog('asset',b.dataset.editAsset);return;}
  if(b.dataset.editDebt){openDialog('debt',b.dataset.editDebt);return;}
+ if(b.dataset.reportCategory){ui.reportCategory=ui.reportCategory===b.dataset.reportCategory?null:b.dataset.reportCategory;render();return;}
+ if(b.dataset.closeReportCategory!==undefined){ui.reportCategory=null;render();return;}
+ if(b.dataset.editTx){openDialog('transaction',b.dataset.editTx);return;}
  if(b.dataset.deleteTx){deleteTransaction(b.dataset.deleteTx);return;}
  if(b.dataset.deleteAsset){deleteAccount(b.dataset.deleteAsset);return;}
  if(b.dataset.deleteDebt){deleteDebt(b.dataset.deleteDebt);return;}
