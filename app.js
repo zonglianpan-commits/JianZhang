@@ -42,7 +42,7 @@ function isValid(data){
 }
 function load(){try{const raw=localStorage.getItem(STORE);if(!raw)return defaultData();const parsed=JSON.parse(raw);return isValid(parsed)?parsed:defaultData();}catch{return defaultData();}}
 let data=load();
-let ui={page:'home',selectedMonth:currentMonth(),txFilter:'all',txType:'expense',reportCategory:null,stackExpanded:false,animating:false};
+let ui={page:'home',selectedMonth:currentMonth(),txFilter:'all',txType:'expense',reportCategory:null,reportPeriod:'month',reportDate:today(),stackExpanded:false,animating:false};
 let toastTimer=null,timelineTimer=null,wheel=null;
 const root=document.getElementById('page-root');
 const dialogRoot=document.getElementById('dialog-root');
@@ -61,7 +61,11 @@ const balanceMaps = () => {
 };
 const totals = () => {const b=balanceMaps();const assets=Object.values(b.accounts).reduce((s,n)=>s+n,0);const liabilities=Object.values(b.debts).reduce((s,n)=>s+n,0);return {...b,assets,liabilities,net:assets-liabilities};};
 const monthTx = key => data.transactions.filter(t=>t.date.slice(0,7)===key);
-const monthStats = key => monthTx(key).reduce((s,t)=>{if(t.type==='income')s.income+=t.amount;else if(t.type==='expense')s.expense+=t.amount;else if(t.type==='repay'){s.repayment+=t.amount;s.interest+=(t.interest||0);s.expense+=(t.interest||0);}return s;},{income:0,expense:0,repayment:0,interest:0});
+const statsFor = items => items.reduce((s,t)=>{if(t.type==='income')s.income+=t.amount;else if(t.type==='expense')s.expense+=t.amount;else if(t.type==='repay'){s.repayment+=t.amount;s.interest+=(t.interest||0);s.expense+=(t.interest||0);}return s;},{income:0,expense:0,repayment:0,interest:0});
+const monthStats = key => statsFor(monthTx(key));
+const dayTx = date => data.transactions.filter(t=>t.date===date);
+const shiftDay = (value,offset) => {const [y,m,d]=value.split('-').map(Number);const next=new Date(y,m-1,d+offset);return `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`;};
+const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value)&&shiftDay(value,0)===value;
 const completedSet = () => new Set((data.completed[currentMonth()]||[]).filter(id=>TASKS.some(t=>t.id===id)));
 function applyProgress(){
  const count=completedSet().size;const ratio=Math.min(count,TASKS.length)/TASKS.length;
@@ -132,10 +136,24 @@ function txListHTML(items,options={}){
    </div></div>`;
  }).join('');
 }
-function reportCategoryTransactions(cat,key=ui.selectedMonth){
- return monthTx(key).filter(t=>(t.type==='expense'&&t.category===cat)||
-  (cat==='还款'&&t.type==='repay'&&(t.interest||0)>0))
- .sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
+// Day/month details share the same accounting rules as the main report.
+function categoryCharge(cat,t){
+ if(t.type==='expense'&&t.category===cat)return t.amount;
+ if(cat==='还款'&&t.type==='repay')return t.interest||0;
+ return 0;
+}
+function reportCategoryTransactions(cat,items){
+ return items.filter(t=>categoryCharge(cat,t)>0).sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));
+}
+function reportDailyGroups(cat,items){
+ const daily=new Map();
+ for(const t of reportCategoryTransactions(cat,items)){
+  const value=daily.get(t.date)||{total:0,count:0};
+  value.total+=categoryCharge(cat,t);
+  value.count++;
+  daily.set(t.date,value);
+ }
+ return [...daily.entries()].sort((a,b)=>b[0].localeCompare(a[0]));
 }
 function renderLedger(){const s=monthStats(ui.selectedMonth);let items=monthTx(ui.selectedMonth).sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''));if(ui.txFilter!=='all')items=items.filter(t=>t.type===ui.txFilter);
  const tags=[['all','全部'],['expense','支出'],['income','收入'],['repay','还款'],['transfer','转账']];
@@ -143,31 +161,51 @@ function renderLedger(){const s=monthStats(ui.selectedMonth);let items=monthTx(u
  ${subtitle('TRANSACTIONS',`${items.length} 笔记录`,'<button type="button" class="subtle-btn" data-open="transaction">+ 新增记录</button>')}<div class="tag-row">${tags.map(([id,label])=>`<button type="button" class="filter-tag ${ui.txFilter===id?'active':''}" data-filter="${id}">${label}</button>`).join('')}</div><div class="tx-list">${txListHTML(items)}</div>`;
 }
 function renderReports(){
- const s=monthStats(ui.selectedMonth),items=monthTx(ui.selectedMonth);
- const sums=Object.fromEntries(CATS.map(c=>[c,0]));
+ const dayMode=ui.reportPeriod==='day';
+ const items=dayMode?dayTx(ui.reportDate):monthTx(ui.selectedMonth);
+ const s=statsFor(items);
+ const sums=Object.fromEntries(CATS.map(cat=>[cat,0]));
  for(const t of items){
   if(t.type==='expense'&&sums[t.category]!==undefined)sums[t.category]+=t.amount;
   if(t.type==='repay')sums['还款']+=(t.interest||0);
  }
  const rows=CATS.map((cat,i)=>({cat,value:sums[cat],color:BAR_COLORS[i]})).filter(r=>r.value>0).sort((a,b)=>b.value-a.value);
  const chosen=rows.find(r=>r.cat===ui.reportCategory);
- const details=chosen?reportCategoryTransactions(chosen.cat):[];
- const detailTotal=details.reduce((sum,t)=>sum+(chosen.cat==='还款'&&t.type==='repay'?(t.interest||0):t.amount),0);
- return `${subtitle('MONEY INSIGHTS','财务月报',`<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`)}
- <div class="metric-grid"><div class="metric"><small>收入</small><strong class="green">${money(s.income)}</strong></div><div class="metric"><small>支出</small><strong class="red">${money(s.expense)}</strong></div><div class="metric"><small>收支结余</small><strong>${money(s.income-s.expense)}</strong></div></div>
- ${subtitle('SPENDING CATEGORIES','消费分类分析','<span class="subtext">点击分类查看账单 ↓</span>')}
+ const details=chosen?reportCategoryTransactions(chosen.cat,items):[];
+ const detailTotal=details.reduce((sum,t)=>sum+categoryCharge(chosen.cat,t),0);
+ const dailyGroups=chosen&&!dayMode?reportDailyGroups(chosen.cat,items):[];
+ const dateControls=dayMode
+  ? `<div class="report-date-controls"><button type="button" class="report-date-arrow" data-report-day-shift="-1" aria-label="前一天">‹</button><label class="report-date-field"><span>查看日期</span><input type="date" value="${esc(ui.reportDate)}" data-report-date aria-label="选择日统计日期"></label><button type="button" class="report-date-arrow" data-report-day-shift="1" aria-label="后一天">›</button><button type="button" class="report-today-btn" data-report-today>今天</button></div>`
+  : `<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`;
+ const periodSwitch=`<div class="report-period-switch" role="group" aria-label="统计周期">
+  <button type="button" class="${dayMode?'':'active'}" data-report-period="month" aria-pressed="${!dayMode}">月统计</button>
+  <button type="button" class="${dayMode?'active':''}" data-report-period="day" aria-pressed="${dayMode}">日统计</button></div>`;
+ return `${subtitle('MONEY INSIGHTS',dayMode?'每日财务统计':'财务月报')}
+ <div class="report-toolbar">${periodSwitch}${dateControls}</div>
+ <div class="metric-grid"><div class="metric"><small>${dayMode?'当日':'本月'}收入</small><strong class="green">${money(s.income)}</strong></div>
+ <div class="metric"><small>${dayMode?'当日':'本月'}支出</small><strong class="red">${money(s.expense)}</strong></div>
+ <div class="metric"><small>${dayMode?'当日':'本月'}收支结余</small><strong>${money(s.income-s.expense)}</strong></div></div>
+ ${subtitle('SPENDING CATEGORIES',dayMode?'当日分类统计':'月度分类统计','<span class="subtext">点击分类查看明细 ↓</span>')}
  <div class="section-card">
- ${rows.length?`<div class="chart-list">${rows.map(r=>`<button type="button" class="chart-item chart-choice ${chosen?.cat===r.cat?'selected':''}" data-report-category="${esc(r.cat)}" aria-expanded="${chosen?.cat===r.cat?'true':'false'}" aria-controls="report-category-details" aria-label="查看${esc(r.cat)}分类账单">
-  <div class="chart-item-head"><span>${CAT_EMOJI[r.cat]} &nbsp;${esc(r.cat)} <span class="chart-chevron">⌄</span></span><b>${money(r.value)} <span class="muted" style="font-weight:400">${Math.round(r.value/s.expense*100)}%</span></b></div>
+ ${rows.length?`<div class="chart-list">${rows.map(r=>`<button type="button" class="chart-item chart-choice ${chosen?.cat===r.cat?'selected':''}" data-report-category="${esc(r.cat)}" aria-expanded="${chosen?.cat===r.cat?'true':'false'}" aria-label="查看${esc(r.cat)}分类账单">
+  <div class="chart-item-head"><span>${CAT_EMOJI[r.cat]} &nbsp;${esc(r.cat)} <span class="chart-chevron">⌄</span></span>
+  <b>${money(r.value)} <span class="muted" style="font-weight:400">${Math.round(r.value/s.expense*100)}%</span></b></div>
   <div class="chart-track"><div class="chart-bar" style="width:${r.value/s.expense*100}%;--bar-color:${r.color}"></div></div>
- </button>`).join('')}</div>`:'<div class="empty-compact">当月没有消费支出。新增一笔支出后，这里会自动出现分类图表。</div>'}
- ${chosen?`<div class="category-details" id="report-category-details"><div class="category-detail-heading"><div><strong>${CAT_EMOJI[chosen.cat]} ${esc(chosen.cat)} · ${details.length} 笔</strong><small>${monthTitle(ui.selectedMonth)} · 分类合计 ${money(detailTotal)}</small></div><button type="button" class="btn-small" data-close-report-category>收起</button></div>
- ${chosen.cat==='还款'?'<p class="category-detail-note">这里只统计还款利息及普通「还款」分类支出；还款本金不属于消费。</p>':''}
- <div class="tx-list">${txListHTML(details,{reportCategory:chosen.cat})}</div></div>`:''}
+ </button>`).join('')}</div>`:`<div class="empty-compact">${dayMode?'这一天':'这个月'}没有消费支出。可以切换日期或新增记录。</div>`}
+ ${chosen?`<div class="category-details" id="report-category-details">
+  <div class="category-detail-heading"><div><strong>${CAT_EMOJI[chosen.cat]} ${esc(chosen.cat)} · ${details.length} 笔账单</strong>
+   <small>${dayMode?ui.reportDate:monthTitle(ui.selectedMonth)} · 合计 ${money(detailTotal)}</small></div>
+   <button type="button" class="btn-small" data-close-report-category>收起</button></div>
+  ${chosen.cat==='还款'?'<p class="category-detail-note">仅统计还款利息及普通「还款」分类支出；还款本金不计入消费。</p>':''}
+  ${dailyGroups.length?`<div class="category-day-breakdown"><div class="category-day-title">每日小计 · 点击日期查看当天账单</div>
+   <div class="category-day-list">${dailyGroups.map(([date,v])=>`<button type="button" class="category-day-button" data-report-day="${date}" aria-label="查看${date}的${esc(chosen.cat)}账单"><span>${date.slice(5)} <small>${v.count} 笔</small></span><strong>${money(v.total)} <span aria-hidden="true">›</span></strong></button>`).join('')}</div></div>`:''}
+  <div class="tx-list">${txListHTML(details,{reportCategory:chosen.cat})}</div></div>`:''}
  </div>
  ${subtitle('DEBT INTELLIGENCE','还款专项')}
- <div class="section-card"><div class="data-row"><span>本月已还本金</span><strong>${money(s.repayment)}</strong></div><div class="data-row"><span>本月利息支出</span><strong>${money(s.interest)}</strong></div><div class="data-row"><span>当前剩余负债</span><strong>${money(totals().liabilities)}</strong></div></div>
- <div class="report-note">💡 还款本金只是“用资产减少负债”，不会被重复计入消费；还款利息才计入当月支出。收入减支出不等于现金账户的全部变动，还款本金和转账也会影响现金流。</div>`;
+ <div class="section-card"><div class="data-row"><span>${dayMode?'当日':'本月'}已还本金</span><strong>${money(s.repayment)}</strong></div>
+ <div class="data-row"><span>${dayMode?'当日':'本月'}利息支出</span><strong>${money(s.interest)}</strong></div>
+ <div class="data-row"><span>当前剩余负债</span><strong>${money(totals().liabilities)}</strong></div></div>
+ <div class="report-note">💡 还款本金不计入消费，只有还款利息计入支出。切换日/月统计只改变展示范围，不修改已有账目。</div>`;
 }
 function renderSettings(){const t=totals();return `${subtitle('ACCOUNT & SYNC','登录与共享')}<div id="cloud-account-panel" class="settings-box"></div>${subtitle('YOUR PRIVATE LEDGER','我的账本')}<div class="settings-box"><div class="settings-title">🔐 账本本地优先</div><p class="settings-desc">账目优先保存在当前设备。只有配置云端同步并登录后，账本才会上传到你的专属云端账号。JSON 备份尚未加密；清理浏览器或卸载 App 前请导出备份。</p><div class="settings-actions"><button class="btn-small" type="button" data-export-json>↓ 导出备份 JSON</button><button class="btn-small" type="button" data-export-csv>↓ 导出账单 CSV</button><button class="btn-small" type="button" data-import>↑ 导入 JSON</button></div></div>
  ${subtitle('ASSET MANAGEMENT','账户与负债')}<div class="settings-box"><div class="data-row"><span>资产账户</span><strong>${data.accounts.length} 个 · ${money(t.assets)}</strong></div><div class="data-row"><span>负债项目</span><strong>${data.debts.length} 笔 · ${money(t.liabilities)}</strong></div><div class="data-row"><span>历史记账</span><strong>${data.transactions.length} 笔</strong></div><div class="settings-actions" style="margin-top:15px"><button type="button" class="btn-small" data-open="asset">+ 管理资产</button><button type="button" class="btn-small" data-open="debt">+ 管理负债</button><button type="button" class="btn-small" data-nav="home">查看资产卡片</button></div></div>
@@ -355,6 +393,21 @@ document.addEventListener('click',e=>{
  if(b.dataset.openWheel!==undefined){openWheel();return;}
  if(b.dataset.editAsset){openDialog('asset',b.dataset.editAsset);return;}
  if(b.dataset.editDebt){openDialog('debt',b.dataset.editDebt);return;}
+ if(b.dataset.reportPeriod){
+  if(b.dataset.reportPeriod==='month'||b.dataset.reportPeriod==='day'){
+   if(b.dataset.reportPeriod==='day'&&ui.reportPeriod!=='day'&&ui.selectedMonth!==ui.reportDate.slice(0,7)){
+    ui.reportDate=ui.selectedMonth===currentMonth()?today():ui.selectedMonth+'-01';
+   }
+   ui.reportPeriod=b.dataset.reportPeriod;ui.reportCategory=null;render();
+  }return;
+ }
+ if(b.dataset.reportDayShift){
+  const offset=Number(b.dataset.reportDayShift);
+  if(offset===1||offset===-1){ui.reportDate=shiftDay(ui.reportDate,offset);ui.selectedMonth=ui.reportDate.slice(0,7);render();}
+  return;
+ }
+ if(b.dataset.reportToday!==undefined){ui.reportDate=today();ui.selectedMonth=currentMonth();render();return;}
+ if(b.dataset.reportDay){if(validDate(b.dataset.reportDay)){ui.reportDate=b.dataset.reportDay;ui.selectedMonth=ui.reportDate.slice(0,7);ui.reportPeriod='day';render();}return;}
  if(b.dataset.reportCategory){ui.reportCategory=ui.reportCategory===b.dataset.reportCategory?null:b.dataset.reportCategory;render();return;}
  if(b.dataset.closeReportCategory!==undefined){ui.reportCategory=null;render();return;}
  if(b.dataset.editTx){openDialog('transaction',b.dataset.editTx);return;}
@@ -365,6 +418,13 @@ document.addEventListener('click',e=>{
  if(b.dataset.exportCsv!==undefined){exportCSV();return;}
  if(b.dataset.import!==undefined){importJSON();return;}
  if(b.dataset.reset!==undefined){resetData();return;}
+});
+document.addEventListener('change',e=>{
+ if(e.target?.dataset?.reportDate!==undefined){
+  const date=e.target.value;
+  if(validDate(date)){ui.reportDate=date;ui.selectedMonth=date.slice(0,7);render();}
+  else invalid('请输入有效的日期');
+ }
 });
 document.addEventListener('submit',e=>{if(!['transaction-form','quick-transaction-form','asset-form','debt-form'].includes(e.target.id))return;e.preventDefault();if(e.target.id==='transaction-form'||e.target.id==='quick-transaction-form')submitTransaction(e.target);else if(e.target.id==='asset-form')submitAsset(e.target);else submitDebt(e.target);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialogRoot.childElementCount){if(wheel)wheel.dispose();closeDialog();}});
