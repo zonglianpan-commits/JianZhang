@@ -1,0 +1,28 @@
+name: Verify iOS simulator build
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate app icon asset
+        run: |
+          mkdir -p ios/JianZhang/Assets.xcassets/AppIcon.appiconset
+          sips -z 1024 1024 icons/icon-512.png --out ios/JianZhang/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build iOS Simulator app without signing
+        run: |
+          xcodebuild -project ios/JianZhang.xcodeproj -scheme JianZhang -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
