@@ -1,4 +1,4 @@
-const CACHE = 'jianzhang-static-v6';
+const CACHE = 'jianzhang-static-v7';
 const SHELL = ['./', './index.html', './download.html', './styles.css', './app.js', './cloud-config.js', './cloud-sync.js', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
