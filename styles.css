@@ -9,3 +9,22 @@
 
 /* Optional cloud-sync account UI */
 .sync-form{display:grid;gap:11px;margin-top:15px}.sync-form input{width:100%;min-height:46px;border:1px solid var(--border);border-radius:12px;padding:10px 13px;color:var(--text);background:var(--surface2);font-size:14px}.sync-state{color:#bdeca9;font-size:14px;font-weight:700}.sync-warning{color:var(--muted);font-size:12px;line-height:1.8}.sync-status{background:#1a3435;color:#d6f8dc;border:1px solid #365952;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.7}.sync-form .settings-actions{margin-top:5px}
+
+/* V1.2 · 分类下钻、账单编辑 */
+.chart-choice{display:block;width:100%;box-sizing:border-box;text-align:left;cursor:pointer;border:1px solid transparent;background:transparent;color:inherit;border-radius:13px;padding:10px;transition:background .18s,border-color .18s}
+.chart-choice:hover,.chart-choice.selected{background:#203a39;border-color:#3b6058}
+.chart-choice:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.chart-chevron{display:inline-block;color:var(--mint);transition:transform .2s;margin-left:5px}
+.chart-choice.selected .chart-chevron{transform:rotate(180deg)}
+.category-details{margin-top:22px;padding-top:18px;border-top:1px solid #385251;animation:fade-in .25s}
+.category-detail-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:13px}
+.category-detail-heading strong{font-size:14px}
+.category-detail-heading small{display:block;color:var(--muted);font-size:12px;margin-top:7px}
+.category-detail-note{font-size:12px;color:#b6d1c4;line-height:1.7;border:1px solid #39574f;border-radius:11px;background:#1d3434;padding:10px 12px}
+.tx-row-editable{cursor:pointer;transition:border-color .16s,background .16s}
+.tx-row-editable:hover{border-color:#426e5c;background:#1b3440}
+.tx-actions{display:inline-flex;align-items:center;gap:10px;margin-left:10px}
+.edit-btn{border:0;background:transparent;color:var(--mint);font-size:11px;padding:6px 1px}
+.edit-btn:hover,.edit-btn:focus-visible{color:var(--accent);text-decoration:underline}
+.tx-edit-type{margin-top:-7px;margin-bottom:16px}
+@media(max-width:480px){.chart-choice{padding:8px}.category-details .tx-row{padding:11px 9px;gap:8px}.category-details .tx-icon{width:36px;height:36px}.category-details .tx-right strong{font-size:13px}.category-detail-heading{align-items:flex-start}.tx-actions{gap:6px;margin-left:6px}}
