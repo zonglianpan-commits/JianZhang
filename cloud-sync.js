@@ -8,7 +8,7 @@ const ENABLED=/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(BASE)&&KEY.length>=25
 const SESSION_KEY='jianzhang-cloud-session-v1';
 const CHECKPOINT_PREFIX='jianzhang-sync-checkpoint-';
 let session=null, api=null, revision=null, connected=false, dirty=false, conflict=false;
-let remoteRow=null, uploading=false, syncing=false, timer=null, interval=null, statusMessage='';
+let remoteRow=null, uploading=false, syncing=false, timer=null, interval=null, statusMessage='', failureCount=0;
 try{session=ENABLED?JSON.parse(localStorage.getItem(SESSION_KEY)||'null'):null;}catch{session=null;}
 if(session&&!session.user?.id)session=null;
 function activeUserId(){return ENABLED&&session?.user?.id||null;}
@@ -131,11 +131,12 @@ async function upload(){
    // If user edited during the HTTP request, keep dirty and re-upload from new revision.
    dirty=digest(current)!==digest(api.getData());
    if(!dirty)markCheckpoint(current);
+   failureCount=0;
    message(dirty?'检测到新的本地修改，将继续同步':'已同步到云端');
- }catch(e){message(e.message);}
+ }catch(e){failureCount=Math.min(6,failureCount+1);message(e.message);}
  finally{uploading=false;if(dirty&&!conflict)scheduleUpload();}
 }
-function scheduleUpload(){if(!connected||!activeUserId()||conflict)return;clearSchedule();timer=setTimeout(()=>{upload().catch(()=>{});},1500);}
+function scheduleUpload(){if(!connected||!activeUserId()||conflict)return;clearSchedule();const wait=Math.min(60000,1500*Math.pow(2,failureCount));timer=setTimeout(()=>{upload().catch(()=>{});},wait);}
 function onLocalChange(){if(!connected||!activeUserId())return;dirty=true;message('本地已保存，等待云端同步');scheduleUpload();}
 async function initializeCloud(){
  if(!activeUserId()||!api)return;

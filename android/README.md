@@ -12,7 +12,7 @@
 
 ## 隐私与限制
 
-- 不申请 INTERNET 权限、不接入广告、埋点或服务器。账本保存在这个 APK 的独立 WebView 本地存储，网页版本的数据不会自动同步。
+- 可选云同步使用 INTERNET 权限。未配置 Supabase 云服务时不会上传财务数据；云服务配置好、用户登录并确认数据归属后才联网同步。账本依然保存在 APK 的独立 WebView 本地存储。
 - 安装包采用 `WebViewAssetLoader` 通过 `https://appassets.androidplatform.net/assets/www/index.html` 加载本地资产。
 - 资产账本导出 JSON 和 CSV 时打开系统“创建文件”窗口；JSON 导入使用系统选文件窗口。首次导入请先保存原账本备份。
 - **重要**：测试包使用 runner 临时 debug 签名，未来构建可能无法覆盖安装（签名不一致）。发布正式长期使用版前需要使用签名密钥且妥善保存，配置 CI 仓库 Secrets。不要将签名私钥提交到公开 GitHub 仓库。

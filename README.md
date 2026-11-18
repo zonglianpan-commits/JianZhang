@@ -85,12 +85,17 @@ app.js                     账务引擎、界面逻辑及 6 个动效
 styles.css                 深色响应式设计
 manifest.webmanifest       可安装 PWA 配置
 sw.js                      离线静态资源缓存
+cloud-config.js             云端公共配置（初始为空）
+cloud-sync.js               账号登录、同步与冲突检测
+android/                    Android 原生 WebView APK 工程
+ios/                        Apple iOS SwiftUI 工程
+docs/                      SQL 数据表与配置教程
 icons/                     SVG + PNG 应用图标
 .github/workflows/ci.yml     GitHub Actions 基础检查
 .github/workflows/pages.yml  GitHub Pages 部署
 ```
 
-V1.0 · 项目名称可修改 · 无广告、无云端依赖
+V1.1 · 离线优先 · 云同步按需启用
 ## V1.1 跨设备账号同步与安装网站
 
 - 安卓 APK 可从 [见账下载站](https://zonglianpan-commits.github.io/JianZhang/download.html) 直接下载，安装包镜像由 GitHub Pages 提供，无需登录 GitHub。
