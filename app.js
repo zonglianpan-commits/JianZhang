@@ -344,6 +344,7 @@ function submitTransaction(form){
   if(previousIndex>=0)data.transactions[previousIndex]=previous;else data.transactions.pop();
   return false;
  }
+ if(previous && ui.page==='reports' && ui.reportPeriod==='day')ui.reportDate=date;
  if(previous && date.slice(0,7)!==ui.selectedMonth)ui.selectedMonth=date.slice(0,7);
  successThenClose(form,previous?'账单已更新，余额与统计已重新计算 ✓':'已记入账本 ✓');
  return true;

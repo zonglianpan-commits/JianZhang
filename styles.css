@@ -46,3 +46,25 @@
 .quick-full-btn{display:block;width:100%;text-align:center;margin-top:12px}
 @media(max-width:850px){.quick-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:520px){.quick-card{padding:13px 12px}.quick-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.quick-tile{min-height:63px;gap:4px;font-size:12px}.quick-tile-icon{font-size:21px}}
+
+/* V1.4 · Interactive day/month category reports */
+.report-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:3px 0 18px}
+.report-period-switch{display:flex;flex:none;gap:3px;padding:5px;background:#10242a;border:1px solid #31534d;border-radius:13px}
+.report-period-switch button{border:0;border-radius:9px;background:transparent;color:#9fb9af;font-size:12px;font-weight:750;padding:10px 18px;transition:background .2s,color .2s}
+.report-period-switch button.active{background:#c3ef8e;color:#1a3027}
+.report-period-switch button:focus-visible,.category-day-button:focus-visible,.report-date-arrow:focus-visible{outline:2px solid #c3ef8e;outline-offset:3px}
+.report-date-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.report-date-arrow,.report-today-btn{min-height:41px;border-radius:11px;border:1px solid #38594f;background:#19352f;color:#cee7db;padding:0 12px}
+.report-date-arrow{font-size:23px;line-height:1;min-width:39px}
+.report-today-btn{font-size:12px;font-weight:700}
+.report-date-field{display:flex;align-items:center;gap:8px;border:1px solid #38594f;border-radius:11px;background:#19352f;color:#b9d0c6;padding:5px 10px;font-size:11px}
+.report-date-field input{border:0;outline:none;background:transparent;color:#f0f6f5;color-scheme:dark;font:inherit;font-weight:750;min-height:29px;max-width:145px}
+.category-day-breakdown{background:#162e33;border:1px solid #36554d;border-radius:15px;padding:14px;margin:0 0 16px}
+.category-day-title{font-size:12px;color:#b1d6c1;font-weight:750;margin-bottom:11px}
+.category-day-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.category-day-button{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;padding:11px 12px;border:1px solid #3a584d;border-radius:11px;background:#213d3a;color:#ebf7ed;font-size:12px;text-align:left}
+.category-day-button:hover{border-color:#92c894;background:#2b5045}
+.category-day-button strong{font-variant-numeric:tabular-nums;color:#c8eea8;white-space:nowrap}
+.category-day-button small{font-size:10px;color:#9eb5ac;font-weight:400}
+.category-day-button strong span{margin-left:6px;color:#8fbeb0;font-size:17px}
+@media(max-width:520px){.report-toolbar{align-items:stretch;gap:10px}.report-period-switch{width:100%}.report-period-switch button{flex:1}.report-date-controls{width:100%;justify-content:space-between}.report-date-field{flex:1;justify-content:center}.report-date-field input{max-width:130px}.category-day-list{grid-template-columns:1fr}}
