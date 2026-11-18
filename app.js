@@ -4,6 +4,7 @@
 const GUEST_STORE = 'jianzhang-ledger-v1';
 let STORE = window.JianZhangCloud?.activeUserId() ? 'jianzhang-ledger-user-'+window.JianZhangCloud.activeUserId() : GUEST_STORE;
 const CATS = ['餐饮','出行','社交人情','购物','工作成本','生活缴费','烟酒','还款'];
+const QUICK_CATS = [...CATS.filter(c=>c!=='还款'),'income','repay'];
 const INCOME_CATS = ['工资收入','副业收入','投资收入','其他收入'];
 const CAT_EMOJI = {'餐饮':'☕','出行':'🚕','社交人情':'🎁','购物':'🛍','工作成本':'💼','生活缴费':'💡','烟酒':'🚬','还款':'↗','工资收入':'💵','副业收入':'✨','投资收入':'◈','其他收入':'＋'};
 const BAR_COLORS = ['#bcea91','#88e2c4','#a9a1f3','#f2c18b','#8bb7f5','#f2a8b4','#c3c9a5','#dfacdd'];
@@ -78,11 +79,23 @@ function emitParticles(btn){
  for(let i=0;i<13;i++){const particle=document.createElement('i');particle.className='particle';const angle=Math.PI*2*i/13;const radius=26+Math.random()*27;particle.style.setProperty('--dx',`${Math.cos(angle)*radius}px`);particle.style.setProperty('--dy',`${Math.sin(angle)*radius}px`);particle.style.setProperty('--particle-color',i%3===0?'#9f99fa':i%3===1?'#c3ef8e':'#8edfd7');btn.appendChild(particle);setTimeout(()=>particle.remove(),730);}
 }
 const subtitle = (tag,title,action='')=>`<div class="section-head"><div><div class="eyebrow">${tag}</div><h2 class="section-title">${title}</h2></div>${action}</div>`;
+// Category shortcuts reused by home dashboard and the global quick-entry sheet.
+function quickTilesHTML(){
+ return QUICK_CATS.map(cat=>{
+  const label=cat==='income'?'收入':cat==='repay'?'还款':cat;
+  const emoji=cat==='income'?'💵':cat==='repay'?'↗':CAT_EMOJI[cat];
+  return `<button type="button" class="quick-tile" data-quick-category="${esc(cat)}" aria-label="快速记录${esc(label)}">
+   <span class="quick-tile-icon" aria-hidden="true">${emoji}</span><span>${esc(label)}</span></button>`;
+ }).join('');
+}
 function renderHome(){
  const t=totals(),m=monthStats(currentMonth()),done=completedSet();
  const taskHTML=TASKS.map(task=>{const checked=done.has(task.id);return `<div class="goal-item ${checked?'completed':''}"><button type="button" class="task-done ${checked?'checked':''}" data-task="${task.id}" aria-label="${checked?'取消完成':'标记完成'}：${task.title}" aria-pressed="${checked}">${icon('check',16)}</button><span class="goal-text">${task.title}</span></div>`;}).join('');
  return `<div class="hero"><div class="hero-row"><div class="hero-overline">TOTAL NET WORTH · 当前净资产</div><div class="hero-deco">${icon('wallet',26)}</div></div><div class="hero-value"><em>¥</em> ${money(t.net).slice(1)}</div><div class="net-tip">资产减去负债，才是真正属于你的余额</div><div class="hero-stat-row"><div class="hero-mini"><small>↗ 总资产</small><strong>${money(t.assets)}</strong></div><div class="hero-mini"><small>↘ 总负债</small><strong>${money(t.liabilities)}</strong></div></div></div>
  <div class="action-row"><button class="action-primary" type="button" data-open="transaction">${icon('plus',17)} 记一笔</button><button class="action-secondary" type="button" data-open="asset">${icon('wallet',17)} 添加资产</button><button class="action-secondary" type="button" data-open="debt">${icon('plus',17)} 添加负债</button></div>
+ <section class="quick-section">${subtitle('FAST ENTRY','快速记账','<span class="subtext">选分类 → 输金额 → 保存</span>')}
+ <div class="quick-card"><div class="quick-grid">${quickTilesHTML()}</div>
+ <div class="quick-footnote">默认今天日期及最近使用的资金账户；可切换账户后保存，还款需选择关联负债。</div></div></section>
  <div class="home-grid"><section>${subtitle('MONTHLY RITUAL','本月财务行动','<span class="subtext">勾选有惊喜 ✨</span>')}<div class="goals-panel"><div class="goal-progress-row"><strong id="goal-count">${done.size} / ${TASKS.length}</strong><span id="goal-percent">${Math.round(done.size/TASKS.length*100)}% 完成</span></div><div class="progress-track"><div class="progress-fill" id="goal-progress" style="width:${done.size/TASKS.length*100}%"></div></div><div class="goals-list">${taskHTML}</div><div class="goal-note">这是理财行动清单，勾选不会自动生成资金流水。</div></div></section>
  <section>${subtitle('YOUR BALANCE SHEET','你的财务拼图','<button type="button" class="subtle-btn" data-toggle-stack>展开 / 收起 ⌄</button>')}<div class="stack-hint">点一下卡片，层层展开查看资产与负债</div><div id="stack-scene" class="stack-scene ${ui.stackExpanded?'expanded':''}"><button type="button" class="stack-card" style="--layer:0" data-toggle-stack><div><span class="stack-name">01 / ASSETS · 资产</span><strong>${money(t.assets)}</strong></div><span class="stack-decor">◈</span></button><button type="button" class="stack-card" style="--layer:1" data-toggle-stack><div><span class="stack-name">02 / LIABILITIES · 负债</span><strong>${money(t.liabilities)}</strong></div><span class="stack-decor">↘</span></button><button type="button" class="stack-card" style="--layer:2" data-toggle-stack><div><span class="stack-name">03 / NET WORTH · 净资产</span><strong>${money(t.net)}</strong></div><span class="stack-decor">✧</span></button></div><div class="account-details ${ui.stackExpanded?'is-open':''}" id="account-details"><div>${accountDetailsHTML(t)}</div></div></section>
  <section class="span-all">${subtitle('TIME MACHINE','月度收支时间线',`<button type="button" class="month-btn" data-open-wheel>${icon('calendar',15)} ${monthTitle(ui.selectedMonth)} ⌄</button>`)}<div class="section-card timeline-shell"><div class="timeline-scroll" id="timeline-scroll">${timelineItems()}</div><div class="timeline-foot">左右滑动自动吸附 · 稳定后绘制趋势线</div></div><div class="metric-grid" style="margin-top:14px"><div class="metric"><small>本月收入</small><strong class="green">${money(m.income)}</strong></div><div class="metric"><small>本月支出</small><strong class="red">${money(m.expense)}</strong></div><div class="metric"><small>本月还款本金</small><strong>${money(m.repayment)}</strong></div></div></section></div>`;
@@ -209,6 +222,41 @@ function transactionDialog(editId){
  <button type="submit" class="submit-btn">${icon('check',19)} ${existing?'保存修改':'完成记账'}</button></form>`:
  `<div class="empty-state"><div class="empty-art">◈</div><h3>${!acc.length?'先添加一个资产账户':type==='repay'?'还没有负债项目':'至少需要两个资产账户'}</h3><p>记录交易需要确定资金从哪里来、到哪里去。</p><button type="button" class="action-primary" data-open="${type==='repay'?'debt':'asset'}">+ 添加${type==='repay'?'负债':'资产账户'}</button></div>`}`);
 }
+// Quick entry shares submitTransaction validation (balances, cents and account links).
+function quickEntryDialog(category){
+ if(!category){
+  showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">⚡ 快速记账</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div>
+  <p class="subtext">选择分类，输入金额，确认后保存。</p><div class="quick-grid quick-dialog-grid">${quickTilesHTML()}</div>
+  <button type="button" class="btn-small quick-full-btn" data-open="transaction">使用完整记账表单</button>`);
+  return;
+ }
+ if(!QUICK_CATS.includes(category))return invalid('快捷分类无效');
+ if(category==='repay'){ui.txType='repay';transactionDialog();return;}
+ if(!data.accounts.length){
+  showDialog('<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">先添加资金账户</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><p class="settings-desc">请先登记一个现金、微信、支付宝或银行卡等资产账户。</p><button type="button" class="submit-btn" data-open="asset">+ 添加资金账户</button>');
+  return;
+ }
+ const income=category==='income';
+ let accountId=data.accounts[0].id;
+ const ids=new Set(data.accounts.map(a=>a.id));
+ for(let i=data.transactions.length-1;i>=0;i--){
+  if(ids.has(data.transactions[i].accountId)){accountId=data.transactions[i].accountId;break;}
+ }
+ const options=income?selectField('收入类型','category',INCOME_CATS.map(c=>({value:c,label:`${CAT_EMOJI[c]} ${c}`})),'其他收入')
+   :`<input type="hidden" name="category" value="${esc(category)}">`;
+ const label=income?'收入':category;
+ showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">${income?'💵':CAT_EMOJI[category]} 快速记${esc(label)}</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div>
+ <form id="quick-transaction-form" data-entry-type="${income?'income':'expense'}" data-edit="">
+ <div class="quick-amount-field">${moneyInput(income?'收入金额（元）':'支出金额（元）','amount')}</div>
+ ${selectField(income?'收款账户':'付款账户','accountId',accountOptions(),accountId)}
+ ${options}
+ <input type="hidden" name="date" value="${today()}">
+ ${field('备注（选填）','note','','maxlength="200" placeholder="简单说明一下"')}
+ <div class="quick-date-note">📅 日期：今天（${today()}）。其他日期可在账单明细中编辑。</div>
+ <button type="submit" class="submit-btn">${icon('check',19)} 保存这笔${income?'收入':'支出'}</button></form>
+ <button type="button" class="btn-small quick-full-btn" data-open="transaction">需要其他日期或转账？完整记账</button>`);
+ requestAnimationFrame(()=>document.querySelector('#quick-transaction-form input[name="amount"]')?.focus({preventScroll:true}));
+}
 function assetDialog(id){const existing=data.accounts.find(a=>a.id===id);const name=existing?.name||'';const opening=existing?(existing.opening/100).toFixed(2):'';
  showDialog(`<div class="dialog-title-row"><span class="dialog-title" id="dialog-title">${existing?'编辑':'新增'}资产账户</span><button type="button" class="icon-button" data-close aria-label="关闭">×</button></div><form id="asset-form" data-edit="${esc(id||'')}">${field('账户名称','name',name,'required maxlength="60" placeholder="如：微信钱包、建设银行卡"')}${selectField('资产类型','type',['银行卡','现金','微信','支付宝','投资','其他资产'].map(x=>({value:x,label:x})),existing?.type||'银行卡')}${moneyInput('期初金额 / 资产估值（元）','opening',opening)}<div class="form-helper">期初金额是账户建立时的基准值；后续流水会自动增减余额。非现金资产可登记估值，但不要把同一笔钱在不同账户重复登记。</div><button type="submit" class="submit-btn">${icon('check')} ${existing?'保存修改':'创建资产账户'}</button></form>${existing?`<div class="settings-actions" style="margin-top:12px"><button type="button" class="btn-small btn-danger" data-delete-asset="${esc(id)}">删除此账户</button></div>`:''}`);
 }
@@ -295,6 +343,8 @@ document.addEventListener('click',e=>{
  }
  if(b.dataset.close!==undefined){if(wheel)wheel.dispose();closeDialog();return;}
  if(b.dataset.nav){navigate(b.dataset.nav,b);return;}
+ if(b.dataset.quickOpen!==undefined){quickEntryDialog();return;}
+ if(b.dataset.quickCategory){quickEntryDialog(b.dataset.quickCategory);return;}
  if(b.dataset.open){closeDialog();openDialog(b.dataset.open);return;}
  if(b.dataset.txType){ui.txType=b.dataset.txType;transactionDialog();return;}
  if(b.dataset.toggleStack!==undefined){ui.stackExpanded=!ui.stackExpanded;document.getElementById('stack-scene')?.classList.toggle('expanded',ui.stackExpanded);document.getElementById('account-details')?.classList.toggle('is-open',ui.stackExpanded);return;}
@@ -315,7 +365,7 @@ document.addEventListener('click',e=>{
  if(b.dataset.import!==undefined){importJSON();return;}
  if(b.dataset.reset!==undefined){resetData();return;}
 });
-document.addEventListener('submit',e=>{if(!['transaction-form','asset-form','debt-form'].includes(e.target.id))return;e.preventDefault();if(e.target.id==='transaction-form')submitTransaction(e.target);else if(e.target.id==='asset-form')submitAsset(e.target);else submitDebt(e.target);});
+document.addEventListener('submit',e=>{if(!['transaction-form','quick-transaction-form','asset-form','debt-form'].includes(e.target.id))return;e.preventDefault();if(e.target.id==='transaction-form'||e.target.id==='quick-transaction-form')submitTransaction(e.target);else if(e.target.id==='asset-form')submitAsset(e.target);else submitDebt(e.target);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialogRoot.childElementCount){if(wheel)wheel.dispose();closeDialog();}});
 document.querySelectorAll('.nav-icon').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 render();
